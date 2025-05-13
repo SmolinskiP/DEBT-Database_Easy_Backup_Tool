@@ -57,22 +57,22 @@
                                 </td>
                                 <td>
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-outline-primary run-now-btn" data-task-id="{{ task.id }}">
-                                            <i class="bi bi-play-fill"></i> Uruchom teraz
-                                        </button>
-                                        <button type="button" class="btn btn-sm {% if task.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %} toggle-btn" data-task-id="{{ task.id }}">
-                                            {% if task.enabled %}
-                                                <i class="bi bi-pause-fill"></i> Wyłącz
-                                            {% else %}
-                                                <i class="bi bi-play-fill"></i> Włącz
-                                            {% endif %}
-                                        </button>
-                                        <a href="{% url 'edit_schedule' task.id %}" class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-pencil"></i> Edytuj
-                                        </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger delete-task-btn" data-task-id="{{ task.id }}" data-task-name="{{ task.name }}">
-                                            <i class="bi bi-trash"></i> Usuń
-                                        </button>
+        <button type="button" class="btn btn-sm btn-outline-primary run-now-btn me-1" data-task-id="{{ task.id }}">
+            <i class="bi bi-play-fill"></i> Uruchom teraz
+        </button>
+        <button type="button" class="btn btn-sm {% if task.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %} toggle-btn me-1" data-task-id="{{ task.id }}">
+            {% if task.enabled %}
+                <i class="bi bi-pause-fill"></i> Wyłącz
+            {% else %}
+                <i class="bi bi-play-fill"></i> Włącz
+            {% endif %}
+        </button>
+        <a href="{% url 'edit_schedule' task.id %}" class="btn btn-sm btn-outline-secondary me-1">
+            <i class="bi bi-pencil"></i> Edytuj
+        </a>
+        <button type="button" class="btn btn-sm btn-outline-danger delete-task-btn" data-task-id="{{ task.id }}" data-task-name="{{ task.name }}">
+            <i class="bi bi-trash"></i> Usuń
+        </button>
                                     </div>
                                 </td>
                             </tr>

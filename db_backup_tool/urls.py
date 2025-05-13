@@ -2,6 +2,8 @@
 
 from django.contrib import admin
 from django.urls import path
+from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
 from backup_manager.views import (
     dashboard_view, add_server_view, server_list_view,
     test_connection_view, delete_server_view,
@@ -14,30 +16,37 @@ from backup_manager.views import (
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', dashboard_view, name='dashboard'),
+
+    # Ścieżki autentykacji
+    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('password_change/', auth_views.PasswordChangeView.as_view(template_name='registration/password_change_form.html'), name='password_change'),
+    path('password_change/done/', auth_views.PasswordChangeDoneView.as_view(template_name='registration/password_change_done.html'), name='password_change_done'),
+    
+    path('', login_required(dashboard_view), name='dashboard'),
     
     # Serwery baz danych
-    path('servers/add/', add_server_view, name='add_server'),
-    path('servers/', server_list_view, name='server_list'),
-    path('api/test-connection/', test_connection_view, name='test_connection'),
-    path('api/servers/<int:server_id>/', delete_server_view, name='delete_server'),
+    path('servers/add/', login_required(add_server_view), name='add_server'),
+    path('servers/', login_required(server_list_view), name='server_list'),
+    path('api/test-connection/', login_required(test_connection_view), name='test_connection'),
+    path('api/servers/<int:server_id>/', login_required(delete_server_view), name='delete_server'),
     
     # Harmonogramy backupów
-    path('schedules/', schedule_list_view, name='schedule_list'),
-    path('schedules/add/', add_schedule_view, name='add_schedule'),
-    path('schedules/edit/<int:task_id>/', edit_schedule_view, name='edit_schedule'),
-    path('api/schedules/<int:task_id>/', delete_schedule_view, name='delete_schedule'),
-    path('api/schedules/<int:task_id>/toggle/', toggle_schedule_view, name='toggle_schedule'),
-    path('api/schedules/<int:task_id>/run-now/', run_backup_now_view, name='run_backup_now'),
+    path('schedules/', login_required(schedule_list_view), name='schedule_list'),
+    path('schedules/add/', login_required(add_schedule_view), name='add_schedule'),
+    path('schedules/edit/<int:task_id>/', login_required(edit_schedule_view), name='edit_schedule'),
+    path('api/schedules/<int:task_id>/', login_required(delete_schedule_view), name='delete_schedule'),
+    path('api/schedules/<int:task_id>/toggle/', login_required(toggle_schedule_view), name='toggle_schedule'),
+    path('api/schedules/<int:task_id>/run-now/', login_required(run_backup_now_view), name='run_backup_now'),
     
     # Historia backupów
-    path('history/', backup_history_view, name='backup_history'),
-    path('history/export/', export_history_csv_view, name='export_history'),
+    path('history/', login_required(backup_history_view), name='backup_history'),
+    path('history/export/', login_required(export_history_csv_view), name='export_history'),
 
     # Backupy
-    path('backups/', backup_files_view, name='backup_files'),
-    path('backups/download/<int:backup_id>/', download_backup_view, name='download_backup'),
-    path('api/backups/restore/<int:backup_id>/', restore_backup_view, name='restore_backup'),
-    path('api/backups/delete/<int:backup_id>/', delete_backup_view, name='delete_backup'),
-    path('api/history/delete/<int:history_id>/', delete_history_view, name='delete_history'),
+    path('backups/', login_required(backup_files_view), name='backup_files'),
+    path('backups/download/<int:backup_id>/', login_required(download_backup_view), name='download_backup'),
+    path('api/backups/restore/<int:backup_id>/', login_required(restore_backup_view), name='restore_backup'),
+    path('api/backups/delete/<int:backup_id>/', login_required(delete_backup_view), name='delete_backup'),
+    path('api/history/delete/<int:history_id>/', login_required(delete_history_view), name='delete_history'),
 ]

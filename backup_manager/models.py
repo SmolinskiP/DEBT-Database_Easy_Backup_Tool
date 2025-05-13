@@ -169,3 +169,6 @@ class BackupHistory(models.Model):
     def is_restorable(self):
         """Sprawdza czy backup może być przywrócony"""
         return self.status == 'success' and self.file_path and os.path.exists(self.file_path)
+    def has_file(self):
+        """Sprawdza, czy istnieje plik backupu powiązany z tym wpisem"""
+        return bool(self.file_path and os.path.exists(self.file_path))

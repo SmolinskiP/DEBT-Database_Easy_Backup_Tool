@@ -418,18 +418,27 @@ def delete_backup_view(request, backup_id):
 
 @csrf_exempt
 def delete_history_view(request, history_id):
-    """API endpoint do usuwania wpisu historii (bez usuwania pliku)"""
+    """API endpoint do usuwania wpisu historii (z opcjonalnym usunięciem pliku)"""
     if request.method != 'DELETE':
         return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
     
     try:
         history = BackupHistory.objects.get(id=history_id)
+        
+        # Sprawdź czy istnieje plik i usuń go jeśli tak
+        if history.file_path and os.path.exists(history.file_path):
+            try:
+                os.remove(history.file_path)
+            except OSError as e:
+                # Loguj błąd, ale kontynuuj usuwanie wpisu
+                print(f"Błąd usuwania pliku: {str(e)}")
+        
         history_id = history.id
         history.delete()
         
         return JsonResponse({
             'success': True, 
-            'message': f'Wpis historii #{history_id} został usunięty.'
+            'message': f'Wpis historii #{history_id} został usunięty wraz z powiązanym plikiem.'
         })
     except BackupHistory.DoesNotExist:
         return JsonResponse({

@@ -39,20 +39,20 @@
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{% url 'download_backup' backup.id %}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-download"></i> Pobierz
-                                            </a>
-                                            {% if backup.is_restorable %}
-                                                <button class="btn btn-sm btn-outline-warning restore-backup-btn" 
-                                                        data-backup-id="{{ backup.id }}"
-                                                        data-server-name="{{ backup.server.name }}"
-                                                        data-file-name="{{ backup.get_filename }}">
-                                                    <i class="bi bi-arrow-counterclockwise"></i> Przywróć
-                                                </button>
-                                            {% endif %}
-                                            <button type="button" class="btn btn-sm btn-outline-danger delete-backup-btn" data-backup-id="{{ backup.id }}" data-file-name="{{ backup.get_filename }}">
-                                                <i class="bi bi-trash"></i> Usuń
-                                            </button>
+        <a href="{% url 'download_backup' backup.id %}" class="btn btn-sm btn-outline-primary me-1">
+            <i class="bi bi-download"></i> Pobierz
+        </a>
+        {% if backup.is_restorable %}
+            <button class="btn btn-sm btn-outline-warning restore-backup-btn me-1" 
+                    data-backup-id="{{ backup.id }}"
+                    data-server-name="{{ backup.server.name }}"
+                    data-file-name="{{ backup.get_filename }}">
+                <i class="bi bi-arrow-counterclockwise"></i> Przywróć
+            </button>
+        {% endif %}
+        <button type="button" class="btn btn-sm btn-outline-danger delete-backup-btn" data-backup-id="{{ backup.id }}" data-file-name="{{ backup.get_filename }}">
+            <i class="bi bi-trash"></i> Usuń
+        </button>
                                         </div>
                                     </td>
                                 </tr>

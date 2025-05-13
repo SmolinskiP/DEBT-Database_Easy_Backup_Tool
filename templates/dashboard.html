@@ -57,7 +57,7 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Recent Backups</h5>
-                <a href="#" class="btn btn-sm btn-primary">History</a>
+                <a href="{% url 'backup_history' %}" class="btn btn-sm btn-primary">History</a>
             </div>
             <div class="card-body">
             {% if recent_backups %}

@@ -30,60 +30,62 @@
                             <th>Szczegóły</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for entry in history %}
-                            <tr>
-                                <td>{{ entry.server.name }}</td>
-                                <td>
-                                    {% if entry.task %}
-                                        <span class="badge bg-info">{{ entry.task.name }}</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Ręczny</span>
-                                    {% endif %}
-                                </td>
-                                <td>{{ entry.started_at|date:"d.m.Y H:i:s" }}</td>
-                                <td>
-                                    {% if entry.completed_at %}
-                                        {{ entry.completed_at|date:"d.m.Y H:i:s" }}
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">W trakcie</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if entry.status == 'success' %}
-                                        <span class="badge bg-success">Sukces</span>
-                                    {% elif entry.status == 'error' %}
-                                        <span class="badge bg-danger">Błąd</span>
-{% elif entry.status == 'pending' %}
-                                        <span class="badge bg-warning text-dark">W trakcie</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if entry.file_size and entry.status == 'success' %}
-                                        {{ entry.file_size|filesizeformat }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-outline-info show-details-btn" data-bs-toggle="modal" data-bs-target="#detailsModal" 
-                                            data-server="{{ entry.server.name }}"
-                                            data-started="{{ entry.started_at|date:'d.m.Y H:i:s' }}"
-                                            data-completed="{% if entry.completed_at %}{{ entry.completed_at|date:'d.m.Y H:i:s' }}{% else %}W trakcie{% endif %}"
-                                            data-status="{{ entry.get_status_display }}"
-                                            data-path="{{ entry.file_path }}"
-                                            data-size="{% if entry.file_size %}{{ entry.file_size|filesizeformat }}{% else %}-{% endif %}"
-                                            data-error="{{ entry.error_message }}"
-                                            data-description="{{ entry.description }}">  <!-- DODAJ TEN ATRYBUT -->
-                                        <i class="bi bi-info-circle"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger delete-history-btn" data-history-id="{{ entry.id }}">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
+<tbody>
+    {% for entry in history %}
+        <tr>
+            <td>{{ entry.server.name }}</td>
+            <td>
+                {% if entry.task %}
+                    <span class="badge bg-info">{{ entry.task.name }}</span>
+                {% else %}
+                    <span class="badge bg-secondary">Ręczny</span>
+                {% endif %}
+            </td>
+            <td>{{ entry.started_at|date:"d.m.Y H:i:s" }}</td>
+            <td>
+                {% if entry.completed_at %}
+                    {{ entry.completed_at|date:"d.m.Y H:i:s" }}
+                {% else %}
+                    <span class="badge bg-warning text-dark">W trakcie</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if entry.status == 'success' %}
+                    <span class="badge bg-success">Sukces</span>
+                {% elif entry.status == 'error' %}
+                    <span class="badge bg-danger">Błąd</span>
+                {% elif entry.status == 'pending' %}
+                    <span class="badge bg-warning text-dark">W trakcie</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if entry.file_size and entry.status == 'success' %}
+                    {{ entry.file_size|filesizeformat }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-outline-info show-details-btn" data-bs-toggle="modal" data-bs-target="#detailsModal" 
+                        data-server="{{ entry.server.name }}"
+                        data-started="{{ entry.started_at|date:'d.m.Y H:i:s' }}"
+                        data-completed="{% if entry.completed_at %}{{ entry.completed_at|date:'d.m.Y H:i:s' }}{% else %}W trakcie{% endif %}"
+                        data-status="{{ entry.get_status_display }}"
+                        data-path="{{ entry.file_path }}"
+                        data-size="{% if entry.file_size %}{{ entry.file_size|filesizeformat }}{% else %}-{% endif %}"
+                        data-error="{{ entry.error_message }}"
+                        data-description="{{ entry.description }}">
+                    <i class="bi bi-info-circle"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-history-btn" 
+                        data-history-id="{{ entry.id }}"
+                        data-has-file="{% if entry.file_path and entry.file_path|length > 0 %}true{% else %}false{% endif %}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
                 </table>
             </div>
         {% else %}
@@ -161,6 +163,7 @@
             </div>
             <div class="modal-body">
                 <p>Czy na pewno chcesz usunąć ten wpis historii?</p>
+                <p id="fileWarning" class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Uwaga: jeśli wpis ma przypisany plik backupu, zostanie on również usunięty!</p>
                 <p>Ta operacja nie może być cofnięta.</p>
             </div>
             <div class="modal-footer">
@@ -258,54 +261,66 @@
         });
     });
 
-    let historyIdToDelete = null;
+        let historyIdToDelete = null;
+        let hasFile = false;
 
-    $('.delete-history-btn').click(function() {
-        historyIdToDelete = $(this).data('history-id');
-        $('#deleteHistoryModal').modal('show');
-    });
-
-    $('#confirmDeleteHistory').click(function() {
-        if (historyIdToDelete) {
-            // Zablokuj przycisk podczas przetwarzania
-            $(this).prop('disabled', true);
-            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...');
+        $('.delete-history-btn').click(function() {
+            historyIdToDelete = $(this).data('history-id');
             
-            $.ajax({
-                url: '/api/history/delete/' + historyIdToDelete + '/',
-                type: 'DELETE',
-                success: function(response) {
-                    $('#deleteHistoryModal').modal('hide');
-                    
-                    // Wyświetl komunikat
-                    $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
-                    $('#messageModal').modal('show');
-                    
-                    // Po zamknięciu modalu odśwież stronę
-                    $('#messageModal').on('hidden.bs.modal', function() {
-                        location.reload();
-                    });
-                },
-                error: function(xhr, status, error) {
-                    $('#deleteHistoryModal').modal('hide');
-                    
-                    // Wyświetl błąd
-                    let errorMsg = 'Wystąpił błąd podczas usuwania wpisu historii.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMsg = xhr.responseJSON.message;
+            // Sprawdź, czy wpis ma powiązany plik
+            hasFile = $(this).data('has-file') === true;
+            
+            // Pokaż lub ukryj ostrzeżenie o pliku
+            if (hasFile) {
+                $('#fileWarning').show();
+            } else {
+                $('#fileWarning').hide();
+            }
+            
+            $('#deleteHistoryModal').modal('show');
+        });
+
+        $('#confirmDeleteHistory').click(function() {
+            if (historyIdToDelete) {
+                // Zablokuj przycisk podczas przetwarzania
+                $(this).prop('disabled', true);
+                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...');
+                
+                $.ajax({
+                    url: '/api/history/delete/' + historyIdToDelete + '/',
+                    type: 'DELETE',
+                    success: function(response) {
+                        $('#deleteHistoryModal').modal('hide');
+                        
+                        // Wyświetl komunikat
+                        $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
+                        $('#messageModal').modal('show');
+                        
+                        // Po zamknięciu modalu odśwież stronę
+                        $('#messageModal').on('hidden.bs.modal', function() {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr, status, error) {
+                        $('#deleteHistoryModal').modal('hide');
+                        
+                        // Wyświetl błąd
+                        let errorMsg = 'Wystąpił błąd podczas usuwania wpisu historii.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        
+                        $('#messageContent').removeClass('alert-success').addClass('alert-danger').text(errorMsg);
+                        $('#messageModal').modal('show');
+                    },
+                    complete: function() {
+                        // Odblokuj przycisk
+                        $('#confirmDeleteHistory').prop('disabled', false);
+                        $('#confirmDeleteHistory').html('Usuń');
                     }
-                    
-                    $('#messageContent').removeClass('alert-success').addClass('alert-danger').text(errorMsg);
-                    $('#messageModal').modal('show');
-                },
-                complete: function() {
-                    // Odblokuj przycisk
-                    $('#confirmDeleteHistory').prop('disabled', false);
-                    $('#confirmDeleteHistory').html('Usuń');
-                }
-            });
-        }
-    });
+                });
+            }
+        });
 
 </script>
 {% endblock %}

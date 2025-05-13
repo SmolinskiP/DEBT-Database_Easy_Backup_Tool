@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load backup_tags %}
+
+{% block title %}Edycja Harmonogramu - DB Backup Tool{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="mb-4">Edycja Harmonogramu Backupu</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Konfiguracja harmonogramu</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="schedule-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Nazwa harmonogramu</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_server" class="form-label">Serwer bazy danych</label>
+                        {{ form.server }}
+                        {% if form.server.errors %}
+                            <div class="text-danger mt-1">{{ form.server.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_frequency" class="form-label">Częstotliwość</label>
+                        {{ form.frequency }}
+                    </div>
+                    
+                    <div class="mb-3 time-field">
+                        <label for="id_time" class="form-label">Czas wykonania</label>
+                        {{ form.time }}
+                    </div>
+                    
+                    <div class="mb-3 day-of-week-field">
+                        <label for="id_day_of_week" class="form-label">Dzień tygodnia</label>
+                        {{ form.day_of_week }}
+                    </div>
+                    
+                    <div class="mb-3 day-of-month-field">
+                        <label for="id_day_of_month" class="form-label">Dzień miesiąca</label>
+                        {{ form.day_of_month }}
+                        <small class="form-text text-muted">Wartość od 1 do 31. Jeśli dany miesiąc nie ma tylu dni, backup zostanie wykonany w ostatnim dniu.</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_retain_count" class="form-label">Liczba przechowywanych backupów</label>
+                        {{ form.retain_count }}
+                        <small class="form-text text-muted">Starsze backupy będą automatycznie usuwane. Ustaw 0, aby zachować wszystkie.</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check form-switch">
+                        {{ form.enabled }}
+                        <label class="form-check-label" for="id_enabled">Aktywny</label>
+                    </div>
+                    
+                    <div class="mb-3 form-check form-switch">
+                        {{ form.email_notification }}
+                        <label class="form-check-label" for="id_email_notification">Powiadomienia e-mail</label>
+                    </div>
+                    
+                    <div class="mb-3 email-field">
+                        <label for="id_email_address" class="form-label">Adres e-mail</label>
+                        {{ form.email_address }}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Anuluj</a>
+                        <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Informacje o harmonogramie -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Informacje o harmonogramie</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Ostatnie uruchomienie:</strong></div>
+                    <div class="col-md-8">
+                        {% if task.last_run %}
+                            {{ task.last_run|date:"d.m.Y H:i:s" }}
+                        {% else %}
+                            <span class="text-muted">Nigdy</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Następne uruchomienie:</strong></div>
+                    <div class="col-md-8">
+                        {% if task.next_run %}
+                            {{ task.next_run|date:"d.m.Y H:i:s" }}
+                        {% else %}
+                            <span class="text-muted">Nie zaplanowano</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Data utworzenia:</strong></div>
+                    <div class="col-md-8">{{ task.created_at|date:"d.m.Y H:i:s" }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4"><strong>Ostatnia modyfikacja:</strong></div>
+                    <div class="col-md-8">{{ task.updated_at|date:"d.m.Y H:i:s" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historia backupów dla tego harmonogramu -->
+<div class="row mt-4">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Historia backupów dla tego harmonogramu</h5>
+                <a href="{% url 'backup_history' %}" class="btn btn-sm btn-outline-primary">Pełna historia</a>
+            </div>
+            <div class="card-body">
+                {% with history=task.backuphistory_set.all|slice:":5" %}
+                    {% if history %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Data rozpoczęcia</th>
+                                        <th>Status</th>
+                                        <th>Rozmiar</th>
+                                        <th>Akcje</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in history %}
+                                        <tr>
+                                            <td>{{ entry.started_at|date:"d.m.Y H:i" }}</td>
+                                            <td>
+                                                {% if entry.status == 'success' %}
+                                                    <span class="badge bg-success">Sukces</span>
+                                                {% elif entry.status == 'error' %}
+                                                    <span class="badge bg-danger">Błąd</span>
+                                                {% elif entry.status == 'pending' %}
+                                                    <span class="badge bg-warning text-dark">W trakcie</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.file_size %}
+                                                    {{ entry.file_size|filesizeformat }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if entry.file_path and entry.status == 'success' %}
+                                                    <a href="{% url 'download_backup' entry.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">Brak historii backupów dla tego harmonogramu.</p>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Popraw klasy dla checkboxów
+        $('#id_enabled, #id_email_notification').removeClass('form-control').addClass('form-check-input');
+        
+        // Funkcja ukrywania/pokazywania pól zależnych od częstotliwości
+        function toggleFrequencyFields() {
+            const frequency = $('#id_frequency').val();
+            
+            // Ukryj wszystkie pola zależne
+            $('.day-of-week-field, .day-of-month-field').hide();
+            
+            // Pokaż odpowiednie pola
+            if (frequency === 'weekly') {
+                $('.day-of-week-field').show();
+            } else if (frequency === 'monthly') {
+                $('.day-of-month-field').show();
+            }
+        }
+        
+        // Funkcja ukrywania/pokazywania pola email
+        function toggleEmailField() {
+            if ($('#id_email_notification').is(':checked')) {
+                $('.email-field').show();
+            } else {
+                $('.email-field').hide();
+            }
+        }
+        
+        // Wywołanie funkcji przy starcie
+        toggleFrequencyFields();
+        toggleEmailField();
+        
+        // Obsługa zmiany
+        $('#id_frequency').change(toggleFrequencyFields);
+        $('#id_email_notification').change(toggleEmailField);
+    });
+</script>
+{% endblock %}
