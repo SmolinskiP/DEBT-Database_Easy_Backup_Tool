@@ -10,7 +10,7 @@ import socket
 import sshtunnel
 
 class BackupService:
-    """Serwis do wykonywania backupów baz danych"""
+    """Service for performing database backups"""
     
     def __init__(self, server_id):
         self.server = DatabaseServer.objects.get(id=server_id)
@@ -18,18 +18,18 @@ class BackupService:
         self.backup_dir = settings.BACKUP_DIR
         
     def execute_backup(self):
-        """Wykonuje backup w zależności od typu połączenia"""
+        """Executes backup depending on connection type"""
         if self.server.connection_type == 'direct':
             return self._direct_backup()
         elif self.server.connection_type == 'ssh':
             return self._ssh_tunnel_backup()
         else:
-            raise ValueError(f"Nieobsługiwany typ połączenia: {self.server.connection_type}")
+            raise ValueError(f"Unsupported connection type: {self.server.connection_type}")
     
     def _direct_backup(self):
-        """Wykonuje bezpośredni backup bazy przez TCP/IP"""
+        """Performs direct database backup through TCP/IP"""
         try:
-            # Testowe połączenie do bazy
+            # Test connection to database
             conn = mysql.connector.connect(
                 host=self.server.hostname,
                 port=self.server.port,
@@ -38,11 +38,11 @@ class BackupService:
             )
             conn.close()
             
-            # Nazwa pliku backupu
+            # Backup filename
             backup_filename = f"{self.server.name}_{self.timestamp}.sql"
             backup_path = os.path.join(self.backup_dir, backup_filename)
             
-            # Wykonanie mysqldump
+            # Execute mysqldump
             cmd = [
                 'mysqldump',
                 f'--host={self.server.hostname}',
@@ -59,33 +59,33 @@ class BackupService:
                 return {
                     'success': True,
                     'path': backup_path,
-                    'message': 'Backup wykonany pomyślnie'
+                    'message': 'Backup completed successfully'
                 }
             else:
                 return {
                     'success': False,
-                    'message': f'Błąd wykonania backupu: {result.stderr}'
+                    'message': f'Backup execution error: {result.stderr}'
                 }
                 
         except Exception as e:
             return {
                 'success': False,
-                'message': f'Błąd połączenia: {str(e)}'
+                'message': f'Connection error: {str(e)}'
             }
     
     def _ssh_tunnel_backup(self):
-        """Wykonuje backup przez tunel SSH"""
-        # Implementacja zostanie dokończona w kolejnym etapie
+        """Performs backup through SSH tunnel"""
+        # Implementation will be completed in the next phase
         pass
 
 class DatabaseConnectionService:
-    """Serwis do testowania i zarządzania połączeniami z bazami danych"""
+    """Service for testing and managing database connections"""
     
     @staticmethod
     def test_connection(server_id=None, connection_data=None):
         """
-        Testuje połączenie z bazą danych.
-        Może przyjąć ID istniejącego serwera lub dane połączenia jako słownik.
+        Tests connection to a database.
+        Can take an existing server ID or connection data as a dictionary.
         """
         if server_id:
             try:
@@ -102,7 +102,7 @@ class DatabaseConnectionService:
             except DatabaseServer.DoesNotExist:
                 return {
                     'success': False,
-                    'message': 'Serwer bazy danych nie istnieje'
+                    'message': 'Database server does not exist'
                 }
         elif connection_data:
             connection_type = connection_data.get('connection_type')
@@ -117,10 +117,10 @@ class DatabaseConnectionService:
         else:
             return {
                 'success': False,
-                'message': 'Nie podano danych do testowania połączenia'
+                'message': 'No connection data provided'
             }
         
-        # Testowanie połączenia w zależności od typu
+        # Test connection based on type
         if connection_type == 'direct':
             return DatabaseConnectionService._test_direct_connection(
                 hostname, port, username, password
@@ -133,14 +133,14 @@ class DatabaseConnectionService:
         else:
             return {
                 'success': False,
-                'message': f'Nieobsługiwany typ połączenia: {connection_type}'
+                'message': f'Unsupported connection type: {connection_type}'
             }
     
     @staticmethod
     def _test_direct_connection(hostname, port, username, password):
-        """Testuje bezpośrednie połączenie TCP/IP do bazy danych"""
+        """Tests direct TCP/IP connection to database"""
         try:
-            # Najpierw sprawdź, czy port jest otwarty
+            # First check if port is open
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
             result = sock.connect_ex((hostname, int(port)))
@@ -149,10 +149,10 @@ class DatabaseConnectionService:
             if result != 0:
                 return {
                     'success': False,
-                    'message': f'Port {port} jest zamknięty na serwerze {hostname}'
+                    'message': f'Port {port} is closed on server {hostname}'
                 }
             
-            # Spróbuj połączyć się z bazą danych
+            # Try to connect to database
             conn = mysql.connector.connect(
                 host=hostname,
                 port=int(port),
@@ -161,7 +161,7 @@ class DatabaseConnectionService:
                 connection_timeout=10
             )
             
-            # Sprawdź wersję serwera MySQL
+            # Check MySQL server version
             cursor = conn.cursor()
             cursor.execute("SELECT VERSION()")
             version = cursor.fetchone()[0]
@@ -170,31 +170,31 @@ class DatabaseConnectionService:
             
             return {
                 'success': True,
-                'message': f'Połączenie nawiązane pomyślnie. Wersja serwera: {version}'
+                'message': f'Connection established successfully. Server version: {version}'
             }
             
         except MySQLError as e:
             return {
                 'success': False,
-                'message': f'Błąd MySQL: {str(e)}'
+                'message': f'MySQL Error: {str(e)}'
             }
         except socket.error as e:
             return {
                 'success': False,
-                'message': f'Błąd połączenia: {str(e)}'
+                'message': f'Connection error: {str(e)}'
             }
         except Exception as e:
             return {
                 'success': False,
-                'message': f'Nieoczekiwany błąd: {str(e)}'
+                'message': f'Unexpected error: {str(e)}'
             }
     
     @staticmethod
     def _test_ssh_connection(db_hostname, db_port, db_username, db_password, 
                             ssh_hostname, ssh_port, ssh_username, ssh_password):
-        """Testuje połączenie do bazy danych przez tunel SSH"""
+        """Tests database connection through SSH tunnel"""
         try:
-            # Sprawdź, czy można się połączyć z serwerem SSH
+            # Check if we can connect to SSH server
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             
@@ -210,10 +210,10 @@ class DatabaseConnectionService:
             except Exception as e:
                 return {
                     'success': False,
-                    'message': f'Błąd połączenia SSH: {str(e)}'
+                    'message': f'SSH connection error: {str(e)}'
                 }
             
-            # Spróbuj otworzyć tunel SSH i połączyć się z bazą danych
+            # Try to open SSH tunnel and connect to database
             with sshtunnel.SSHTunnelForwarder(
                 (ssh_hostname, int(ssh_port)),
                 ssh_username=ssh_username,
@@ -228,7 +228,7 @@ class DatabaseConnectionService:
                     connection_timeout=10
                 )
                 
-                # Sprawdź wersję serwera MySQL
+                # Check MySQL server version
                 cursor = conn.cursor()
                 cursor.execute("SELECT VERSION()")
                 version = cursor.fetchone()[0]
@@ -237,16 +237,16 @@ class DatabaseConnectionService:
                 
                 return {
                     'success': True,
-                    'message': f'Połączenie przez SSH nawiązane pomyślnie. Wersja serwera: {version}'
+                    'message': f'Connection through SSH established successfully. Server version: {version}'
                 }
                 
         except MySQLError as e:
             return {
                 'success': False,
-                'message': f'Błąd MySQL: {str(e)}'
+                'message': f'MySQL Error: {str(e)}'
             }
         except Exception as e:
             return {
                 'success': False,
-                'message': f'Nieoczekiwany błąd: {str(e)}'
+                'message': f'Unexpected error: {str(e)}'
             }

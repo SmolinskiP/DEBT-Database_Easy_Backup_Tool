@@ -14,14 +14,14 @@ class DatabaseServer(models.Model):
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=255)
     
-    # Dane do SSH tunelowania
+    # SSH tunneling data
     ssh_hostname = models.CharField(max_length=255, blank=True, null=True)
     ssh_port = models.IntegerField(default=22, blank=True, null=True)
     ssh_username = models.CharField(max_length=100, blank=True, null=True)
     ssh_password = models.CharField(max_length=255, blank=True, null=True)
     ssh_key_file = models.FileField(upload_to='ssh_keys/', blank=True, null=True)
     
-    # Status serwera
+    # Server status
     last_status = models.BooleanField(default=False)
     last_status_check = models.DateTimeField(null=True, blank=True)
     last_status_message = models.TextField(blank=True)

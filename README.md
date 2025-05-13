@@ -1,31 +1,31 @@
 # DB Backup Tool
 
-Narzędzie do backupu baz danych MySQL/MariaDB z interfejsem WWW. Wspiera zarówno bezpośrednie połączenia TCP/IP jak i tunelowanie przez SSH.
+A web-based backup tool for MySQL/MariaDB databases. Supports both direct TCP/IP connections and SSH tunneling.
 
-## Funkcje
+## Features
 
-- Zarządzanie serwerami baz danych
-- Testowanie połączeń
-- Tworzenie backup'ów baz danych
-- Harmonogramowanie zadań backup'u
-- Historia wykonanych operacji
+- Database server management
+- Connection testing
+- Database backup creation
+- Backup scheduling
+- Operation history
 
-## Wymagania
+## Requirements
 
 - Python 3.8+
 - Django 5.2+
-- MySQL/MariaDB lub klient
-- Dostęp do serwerów baz danych
+- MySQL/MariaDB client
+- Access to database servers
 
-## Instalacja
+## Installation
 
-1. Sklonuj repozytorium:
+1. Clone the repository:
    ```
-   git clone https://github.com/twojlogin/db-backup-tool.git
+   git clone https://github.com/yourusername/db-backup-tool.git
    cd db-backup-tool
    ```
 
-2. Utwórz wirtualne środowisko i zainstaluj zależności:
+2. Create a virtual environment and install dependencies:
    ```
    python -m venv venv
    source venv/bin/activate  # Linux/Mac
@@ -33,28 +33,28 @@ Narzędzie do backupu baz danych MySQL/MariaDB z interfejsem WWW. Wspiera zarów
    pip install -r requirements.txt
    ```
 
-3. Utwórz plik .env na podstawie .env.example i dostosuj:
+3. Create .env file from .env.example and customize:
    ```
    cp .env.example .env
-   # Edytuj plik .env z odpowiednimi wartościami
+   # Edit .env with appropriate values
    ```
 
-4. Wykonaj migracje bazy danych:
+4. Run database migrations:
    ```
    python manage.py migrate
    ```
 
-5. Uruchom serwer deweloperski:
+5. Start the development server:
    ```
    python manage.py runserver
    ```
 
-6. Przejdź do http://127.0.0.1:8000 w przeglądarce
+6. Go to http://127.0.0.1:8000 in your browser
 
-## Konfiguracja
+## Configuration
 
-Wszystkie wrażliwe ustawienia przechowywane są w pliku `.env`. Upewnij się, że ten plik nie jest umieszczany w publicznym repozytorium.
+All sensitive settings are stored in the `.env` file. Make sure this file is not placed in a public repository.
 
-## Licencja
+## License
 
 [MIT License](LICENSE)

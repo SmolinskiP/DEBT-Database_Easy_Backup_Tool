@@ -17,7 +17,7 @@ class DatabaseServerForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['connection_type'].widget.attrs.update({'class': 'form-control', 'id': 'connection_type'})
         
-        # Pola SSH oznaczamy klasą CSS dla łatwiejszego zarządzania widocznością
+        # Mark SSH fields with a CSS class for easier visibility management
         ssh_fields = ['ssh_hostname', 'ssh_port', 'ssh_username', 'ssh_password', 'ssh_key_file']
         for field in ssh_fields:
             self.fields[field].widget.attrs.update({'class': 'ssh-field form-control'})

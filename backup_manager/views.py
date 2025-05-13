@@ -10,7 +10,7 @@ import json
 from django.utils import timezone
 
 def dashboard_view(request):
-    """Strona główna - dashboard"""
+    """Main page - dashboard"""
     servers = DatabaseServer.objects.all().order_by('-created_at')
     
     context = {
@@ -24,14 +24,14 @@ def dashboard_view(request):
     return render(request, 'dashboard.html', context)
 
 def add_server_view(request):
-    """Widok dodawania serwera"""
+    """Add server view"""
     form = DatabaseServerForm()
     
     if request.method == 'POST':
         form = DatabaseServerForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
-            messages.success(request, "Serwer bazy danych został dodany pomyślnie.")
+            messages.success(request, "Database server has been added successfully.")
             return redirect('dashboard')
     
     context = {
@@ -40,7 +40,7 @@ def add_server_view(request):
     return render(request, 'add_server.html', context)
 
 def server_list_view(request):
-    """Widok listy serwerów"""
+    """Server list view"""
     servers = DatabaseServer.objects.all().order_by('-created_at')
     
     context = {
@@ -50,17 +50,17 @@ def server_list_view(request):
 
 @csrf_exempt
 def test_connection_view(request):
-    """Widok API do testowania połączenia z bazą danych"""
+    """API view for testing database connection"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             
-            # Jeśli mamy ID serwera, testujemy połączenie do istniejącego serwera
+            # If we have a server ID, test connection to existing server
             if 'server_id' in data:
                 server_id = data['server_id']
                 result = DatabaseConnectionService.test_connection(server_id=server_id)
                 
-                # Aktualizuj status serwera
+                # Update server status
                 try:
                     server = DatabaseServer.objects.get(id=server_id)
                     server.last_status = result['success']
@@ -72,8 +72,7 @@ def test_connection_view(request):
                 
                 return JsonResponse(result)
             
-            # W przeciwnym razie testujemy połączenie z danymi z formularza
-            # (ten przypadek pozostaje bez zmian)
+            # Otherwise test connection with form data
             connection_data = {
                 'connection_type': data.get('connection_type'),
                 'hostname': data.get('hostname'),
@@ -91,25 +90,25 @@ def test_connection_view(request):
         except Exception as e:
             return JsonResponse({
                 'success': False,
-                'message': f'Błąd przetwarzania żądania: {str(e)}'
+                'message': f'Error processing request: {str(e)}'
             })
     
     return JsonResponse({
         'success': False,
-        'message': 'Nieprawidłowa metoda HTTP. Użyj POST.'
+        'message': 'Invalid HTTP method. Use POST.'
     })
 
 @csrf_exempt
 def delete_server_view(request, server_id):
-    """Widok API do usuwania serwera"""
+    """API view for deleting a server"""
     if request.method == 'DELETE':
         try:
             server = DatabaseServer.objects.get(id=server_id)
             server.delete()
-            return JsonResponse({'success': True, 'message': 'Serwer usunięty pomyślnie'})
+            return JsonResponse({'success': True, 'message': 'Server deleted successfully'})
         except DatabaseServer.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Serwer nie istnieje'}, status=404)
+            return JsonResponse({'success': False, 'message': 'Server does not exist'}, status=404)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
     
-    return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
+    return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)

@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Dodaj serwer - DB Backup Tool{% endblock %}
+{% block title %}Add Server - DB Backup Tool{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12">
-        <h1 class="mb-4">Dodaj nowy serwer bazy danych</h1>
+        <h1 class="mb-4">Add New Database Server</h1>
     </div>
 </div>
 
@@ -13,74 +13,74 @@
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Konfiguracja serwera</h5>
+                <h5 class="mb-0">Server Configuration</h5>
             </div>
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data" id="server-form">
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="id_name" class="form-label">Nazwa serwera</label>
+                        <label for="id_name" class="form-label">Server Name</label>
                         {{ form.name }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_connection_type" class="form-label">Typ połączenia</label>
+                        <label for="id_connection_type" class="form-label">Connection Type</label>
                         {{ form.connection_type }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_hostname" class="form-label">Host bazy danych</label>
+                        <label for="id_hostname" class="form-label">Database Host</label>
                         {{ form.hostname }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_port" class="form-label">Port bazy danych</label>
+                        <label for="id_port" class="form-label">Database Port</label>
                         {{ form.port }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_username" class="form-label">Użytkownik bazy danych</label>
+                        <label for="id_username" class="form-label">Database User</label>
                         {{ form.username }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_password" class="form-label">Hasło bazy danych</label>
+                        <label for="id_password" class="form-label">Database Password</label>
                         {{ form.password }}
                     </div>
                     
-                    <!-- Sekcja SSH Tunnel -->
+                    <!-- SSH Tunnel Section -->
                     <div id="ssh-fields-container" class="ssh-field-container">
-                        <h5 class="mt-4 mb-3">Konfiguracja tunelu SSH</h5>
+                        <h5 class="mt-4 mb-3">SSH Tunnel Configuration</h5>
                         
                         <div class="mb-3">
-                            <label for="id_ssh_hostname" class="form-label">Host SSH</label>
+                            <label for="id_ssh_hostname" class="form-label">SSH Host</label>
                             {{ form.ssh_hostname }}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_ssh_port" class="form-label">Port SSH</label>
+                            <label for="id_ssh_port" class="form-label">SSH Port</label>
                             {{ form.ssh_port }}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_ssh_username" class="form-label">Użytkownik SSH</label>
+                            <label for="id_ssh_username" class="form-label">SSH User</label>
                             {{ form.ssh_username }}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_ssh_password" class="form-label">Hasło SSH</label>
+                            <label for="id_ssh_password" class="form-label">SSH Password</label>
                             {{ form.ssh_password }}
                         </div>
                         
                         <div class="mb-3">
-                            <label for="id_ssh_key_file" class="form-label">Klucz SSH (opcjonalnie)</label>
+                            <label for="id_ssh_key_file" class="form-label">SSH Key (optional)</label>
                             {{ form.ssh_key_file }}
                         </div>
                     </div>
                     
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">Dodaj serwer</button>
+                        <button type="submit" class="btn btn-primary">Add Server</button>
                     </div>
                 </form>
             </div>
@@ -92,10 +92,10 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Dodanie klas do wszystkich pól formularza
+        // Add classes to all form fields
         $('input[type="text"], input[type="password"], input[type="number"], select, textarea').addClass('form-control');
         
-        // Funkcja do zarządzania widocznością pól SSH
+        // Function to manage SSH field visibility
         function toggleSSHFields() {
             if ($('select[name="connection_type"]').val() === 'ssh') {
                 $('#ssh-fields-container').addClass('visible');
@@ -104,7 +104,7 @@
             }
         }
         
-        // Wywołanie przy starcie i przy zmianie
+        // Call on start and on change
         toggleSSHFields();
         $('select[name="connection_type"]').change(toggleSSHFields);
     });
