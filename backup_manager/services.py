@@ -4,10 +4,10 @@ import mysql.connector
 from mysql.connector import Error as MySQLError
 import subprocess
 import datetime
+import sshtunnel
 from django.conf import settings
 from .models import DatabaseServer
 import socket
-import sshtunnel
 
 class BackupService:
     """Service for performing database backups"""
@@ -30,12 +30,18 @@ class BackupService:
         """Performs direct database backup through TCP/IP"""
         try:
             # Test connection to database
-            conn = mysql.connector.connect(
-                host=self.server.hostname,
-                port=self.server.port,
-                user=self.server.username,
-                password=self.server.password,
-            )
+            conn_params = {
+                'host': self.server.hostname,
+                'port': self.server.port,
+                'user': self.server.username,
+                'password': self.server.password,
+            }
+            
+            # Dodaj bazę danych do parametrów połączenia, jeśli określona
+            if self.server.database_name:
+                conn_params['database'] = self.server.database_name
+                
+            conn = mysql.connector.connect(**conn_params)
             conn.close()
             
             # Backup filename
@@ -49,9 +55,16 @@ class BackupService:
                 f'--port={self.server.port}',
                 f'--user={self.server.username}',
                 f'--password={self.server.password}',
-                '--all-databases',
-                f'--result-file={backup_path}'
             ]
+            
+            # Dodaj opcję wyboru bazy lub wszystkich baz
+            if self.server.database_name:
+                cmd.append(self.server.database_name)
+            else:
+                cmd.append('--all-databases')
+            
+            # Ścieżka do pliku wyjściowego
+            cmd.append(f'--result-file={backup_path}')
             
             result = subprocess.run(cmd, capture_output=True, text=True)
             
@@ -75,8 +88,88 @@ class BackupService:
     
     def _ssh_tunnel_backup(self):
         """Performs backup through SSH tunnel"""
-        # Implementation will be completed in the next phase
-        pass
+        try:
+            # Sprawdź dane SSH
+            if not all([self.server.ssh_hostname, self.server.ssh_port, self.server.ssh_username]):
+                return {
+                    'success': False,
+                    'message': 'Brakujące dane SSH: hostname, port lub username'
+                }
+            
+            # Sprawdź czy posiadamy hasło lub klucz SSH
+            if not self.server.ssh_password and not self.server.ssh_key_file:
+                return {
+                    'success': False,
+                    'message': 'Brak metody uwierzytelniania SSH (hasło lub klucz)'
+                }
+            
+            # Nazwa pliku backupu
+            backup_filename = f"{self.server.name}_{self.timestamp}.sql"
+            backup_path = os.path.join(self.backup_dir, backup_filename)
+            
+            # Tworzenie tunelu SSH
+            ssh_config = {
+                'ssh_address_or_host': (self.server.ssh_hostname, int(self.server.ssh_port)),
+                'ssh_username': self.server.ssh_username,
+                'remote_bind_address': (self.server.hostname, int(self.server.port))
+            }
+            
+            # Dodawanie metody uwierzytelniania
+            if self.server.ssh_password:
+                ssh_config['ssh_password'] = self.server.ssh_password
+            elif self.server.ssh_key_file and self.server.ssh_key_file.path:
+                ssh_config['ssh_pkey'] = self.server.ssh_key_file.path
+                
+            # Utwórz tunel SSH
+            with sshtunnel.SSHTunnelForwarder(**ssh_config) as tunnel:
+                # Wykonaj backup przez tunel - mysqldump łączy się z lokalnym portem
+                cmd = [
+                    'mysqldump',
+                    '--host=127.0.0.1',
+                    f'--port={tunnel.local_bind_port}',
+                    f'--user={self.server.username}',
+                    f'--password={self.server.password}',
+                ]
+                
+                # Dodaj opcję wyboru bazy lub wszystkich baz
+                if self.server.database_name:
+                    cmd.append(self.server.database_name)
+                else:
+                    cmd.append('--all-databases')
+                
+                # Dodaj przydatne opcje dla dużych baz
+                cmd.extend([
+                    '--single-transaction',    # Spójny backup bez blokowania tabel
+                    '--quick',                 # Mniejsze użycie pamięci dla dużych tabel
+                    '--compress',              # Kompresja danych między klientem a serwerem
+                    '--routines',              # Uwzględnij procedury i funkcje
+                    '--triggers',              # Uwzględnij triggery
+                    '--events'                 # Uwzględnij wydarzenia
+                ])
+                
+                # Ścieżka do pliku wyjściowego
+                cmd.append(f'--result-file={backup_path}')
+                
+                # Uruchom mysqldump
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    return {
+                        'success': True,
+                        'path': backup_path,
+                        'message': 'Backup completed successfully through SSH tunnel'
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'message': f'Backup execution error: {result.stderr}'
+                    }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'message': f'SSH tunnel error: {str(e)}'
+            }
 
 class DatabaseConnectionService:
     """Service for testing and managing database connections"""

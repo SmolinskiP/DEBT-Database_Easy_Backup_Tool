@@ -48,6 +48,13 @@
                         <label for="id_password" class="form-label">Database Password</label>
                         {{ form.password }}
                     </div>
+
+                    <div class="mb-3">
+                        <label for="id_database_name" class="form-label">Database Name</label>
+                        {{ form.database_name }}
+                        <small class="form-text text-muted">Specific database to backup. Leave empty for all databases.</small>
+                    </div>
+
                     
                     <!-- SSH Tunnel Section -->
                     <div id="ssh-fields-container" class="ssh-field-container">

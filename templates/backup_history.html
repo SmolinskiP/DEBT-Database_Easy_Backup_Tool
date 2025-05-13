@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+
+{% block title %}Historia Backupów - DB Backup Tool{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h1 class="mb-0">Historia Backupów</h1>
+        <div>
+            <a href="{% url 'export_history' %}" class="btn btn-outline-primary">
+                <i class="bi bi-download"></i> Eksportuj do CSV
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if history %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Serwer</th>
+                            <th>Źródło</th>
+                            <th>Rozpoczęcie</th>
+                            <th>Zakończenie</th>
+                            <th>Status</th>
+                            <th>Rozmiar</th>
+                            <th>Szczegóły</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in history %}
+                            <tr>
+                                <td>{{ entry.server.name }}</td>
+                                <td>
+                                    {% if entry.task %}
+                                        <span class="badge bg-info">{{ entry.task.name }}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Ręczny</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ entry.started_at|date:"d.m.Y H:i:s" }}</td>
+                                <td>
+                                    {% if entry.completed_at %}
+                                        {{ entry.completed_at|date:"d.m.Y H:i:s" }}
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">W trakcie</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.status == 'success' %}
+                                        <span class="badge bg-success">Sukces</span>
+                                    {% elif entry.status == 'error' %}
+                                        <span class="badge bg-danger">Błąd</span>
+{% elif entry.status == 'pending' %}
+                                        <span class="badge bg-warning text-dark">W trakcie</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if entry.file_size and entry.status == 'success' %}
+                                        {{ entry.file_size|filesizeformat }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-outline-info show-details-btn" data-bs-toggle="modal" data-bs-target="#detailsModal" 
+                                            data-server="{{ entry.server.name }}"
+                                            data-started="{{ entry.started_at|date:'d.m.Y H:i:s' }}"
+                                            data-completed="{% if entry.completed_at %}{{ entry.completed_at|date:'d.m.Y H:i:s' }}{% else %}W trakcie{% endif %}"
+                                            data-status="{{ entry.get_status_display }}"
+                                            data-path="{{ entry.file_path }}"
+                                            data-size="{% if entry.file_size %}{{ entry.file_size|filesizeformat }}{% else %}-{% endif %}"
+                                            data-error="{{ entry.error_message }}"
+                                            data-description="{{ entry.description }}">  <!-- DODAJ TEN ATRYBUT -->
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-history-btn" data-history-id="{{ entry.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-clock-history fs-1 text-muted"></i>
+                    <h4 class="mt-3">Brak historii backupów</h4>
+                    <p class="text-muted">Historia pojawi się po wykonaniu pierwszego backupu.</p>
+                    <a href="{% url 'schedule_list' %}" class="btn btn-primary mt-2">
+                        <i class="bi bi-calendar-check"></i> Przejdź do harmonogramu
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal szczegółów backupu -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Szczegóły backupu</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Serwer:</strong></div>
+                    <div class="col-md-8" id="detail-server"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Rozpoczęcie:</strong></div>
+                    <div class="col-md-8" id="detail-started"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Zakończenie:</strong></div>
+                    <div class="col-md-8" id="detail-completed"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Status:</strong></div>
+                    <div class="col-md-8" id="detail-status"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Rozmiar pliku:</strong></div>
+                    <div class="col-md-8" id="detail-size"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Ścieżka pliku:</strong></div>
+                    <div class="col-md-8" id="detail-path"></div>
+                </div>
+                
+                <div class="error-details mt-3" style="display: none;">
+                    <h6>Szczegóły błędu:</h6>
+                    <div class="alert alert-danger" id="detail-error"></div>
+                </div>
+                <div class="description-details mt-3" style="display: none;">
+                    <h6>Opis operacji:</h6>
+                    <div class="alert alert-info" id="detail-description"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal potwierdzenia usunięcia wpisu historii -->
+<div class="modal fade" id="deleteHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Potwierdź usunięcie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Czy na pewno chcesz usunąć ten wpis historii?</p>
+                <p>Ta operacja nie może być cofnięta.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteHistory">Usuń</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal komunikatu -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Komunikat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="messageContent" class="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Obsługa modalu ze szczegółami - USUŃ TĘ STARĄ WERSJĘ
+        /*$('.show-details-btn').click(function() {
+            const server = $(this).data('server');
+            const started = $(this).data('started');
+            const completed = $(this).data('completed');
+            const status = $(this).data('status');
+            const path = $(this).data('path');
+            const size = $(this).data('size');
+            const error = $(this).data('error');
+            
+            // Wypełnij modal danymi
+            $('#detail-server').text(server);
+            $('#detail-started').text(started);
+            $('#detail-completed').text(completed);
+            $('#detail-status').text(status);
+            $('#detail-path').text(path || '-');
+            $('#detail-size').text(size);
+            
+            // Pokaż/ukryj sekcję błędu
+            if (error && error.trim() !== '') {
+                $('.error-details').show();
+                $('#detail-error').text(error);
+            } else {
+                $('.error-details').hide();
+            }
+        });*/
+
+        // Nowa wersja z obsługą opisu
+        $('.show-details-btn').click(function() {
+            const server = $(this).data('server');
+            const started = $(this).data('started');
+            const completed = $(this).data('completed');
+            const status = $(this).data('status');
+            const path = $(this).data('path');
+            const size = $(this).data('size');
+            const error = $(this).data('error');
+            const description = $(this).data('description');
+            
+            // Wypełnij modal danymi
+            $('#detail-server').text(server);
+            $('#detail-started').text(started);
+            $('#detail-completed').text(completed);
+            $('#detail-status').text(status);
+            $('#detail-path').text(path || '-');
+            $('#detail-size').text(size);
+            
+            // Pokaż/ukryj sekcję błędu
+            if (error && error.trim() !== '') {
+                $('.error-details').show();
+                $('#detail-error').text(error);
+            } else {
+                $('.error-details').hide();
+            }
+            
+            // Pokaż/ukryj sekcję opisu
+            if (description && description.trim() !== '') {
+                $('.description-details').show();
+                $('#detail-description').text(description);
+            } else {
+                $('.description-details').hide();
+            }
+        });
+    });
+
+    let historyIdToDelete = null;
+
+    $('.delete-history-btn').click(function() {
+        historyIdToDelete = $(this).data('history-id');
+        $('#deleteHistoryModal').modal('show');
+    });
+
+    $('#confirmDeleteHistory').click(function() {
+        if (historyIdToDelete) {
+            // Zablokuj przycisk podczas przetwarzania
+            $(this).prop('disabled', true);
+            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...');
+            
+            $.ajax({
+                url: '/api/history/delete/' + historyIdToDelete + '/',
+                type: 'DELETE',
+                success: function(response) {
+                    $('#deleteHistoryModal').modal('hide');
+                    
+                    // Wyświetl komunikat
+                    $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
+                    $('#messageModal').modal('show');
+                    
+                    // Po zamknięciu modalu odśwież stronę
+                    $('#messageModal').on('hidden.bs.modal', function() {
+                        location.reload();
+                    });
+                },
+                error: function(xhr, status, error) {
+                    $('#deleteHistoryModal').modal('hide');
+                    
+                    // Wyświetl błąd
+                    let errorMsg = 'Wystąpił błąd podczas usuwania wpisu historii.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    }
+                    
+                    $('#messageContent').removeClass('alert-success').addClass('alert-danger').text(errorMsg);
+                    $('#messageModal').modal('show');
+                },
+                complete: function() {
+                    // Odblokuj przycisk
+                    $('#confirmDeleteHistory').prop('disabled', false);
+                    $('#confirmDeleteHistory').html('Usuń');
+                }
+            });
+        }
+    });
+
+</script>
+{% endblock %}

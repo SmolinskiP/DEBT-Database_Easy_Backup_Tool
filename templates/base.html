@@ -178,17 +178,22 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/servers/' %}active{% endif %}" href="{% url 'server_list' %}">
-                            <i class="bi bi-hdd-network"></i> Servers
+                            <i class="bi bi-hdd-network"></i> Serwery
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/servers/add/' %}active{% endif %}" href="{% url 'add_server' %}">
-                            <i class="bi bi-plus-circle"></i> Add Server
+                        <a class="nav-link {% if request.path == '/schedules/' %}active{% endif %}" href="{% url 'schedule_list' %}">
+                            <i class="bi bi-calendar-check"></i> Harmonogram
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
-                            <i class="bi bi-calendar-check"></i> Scheduled Tasks
+                        <a class="nav-link {% if request.path == '/history/' %}active{% endif %}" href="{% url 'backup_history' %}">
+                            <i class="bi bi-clock-history"></i> Historia
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/backups/' %}active{% endif %}" href="{% url 'backup_files' %}">
+                            <i class="bi bi-file-earmark-zip"></i> Backupy
                         </a>
                     </li>
                 </ul>
