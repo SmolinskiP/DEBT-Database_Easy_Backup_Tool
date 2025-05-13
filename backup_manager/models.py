@@ -53,6 +53,11 @@ class BackupTask(models.Model):
         (5, 'Saturday'),
         (6, 'Sunday'),
     )
+    STORAGE_CHOICES = (
+        ('local', 'Local Storage'),
+        ('ftp', 'FTP Server'),
+        ('sftp', 'SFTP Server'),
+    )
     
     name = models.CharField(max_length=100)
     server = models.ForeignKey('DatabaseServer', on_delete=models.CASCADE, related_name='backup_tasks')
@@ -74,7 +79,17 @@ class BackupTask(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
+    storage_type = models.CharField(max_length=10, choices=STORAGE_CHOICES, default='local')
+    # Dane FTP/SFTP
+    remote_hostname = models.CharField(max_length=255, blank=True, null=True)
+    remote_port = models.IntegerField(blank=True, null=True)
+    remote_username = models.CharField(max_length=100, blank=True, null=True)
+    remote_password = models.CharField(max_length=255, blank=True, null=True)
+    remote_path = models.CharField(max_length=255, blank=True, null=True, 
+                                   help_text="Path on remote server where backups will be stored")
+    remote_key_file = models.FileField(upload_to='remote_keys/', blank=True, null=True)    
+
     def __str__(self):
         return f"{self.name} ({self.get_frequency_display()} - {self.server.name})"
     

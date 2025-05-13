@@ -8,6 +8,7 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from .models import BackupTask, BackupHistory, DatabaseServer
 from .services import BackupService
+from .storage import StorageService
 
 @shared_task
 def run_scheduled_backups():
@@ -34,16 +35,30 @@ def execute_backup_task(task_id):
         )
         
         try:
+            # Wykonaj backup
             backup_service = BackupService(server.id)
             result = backup_service.execute_backup()
             
-            history.completed_at = timezone.now()
-            history.status = 'success' if result['success'] else 'error'
-            
             if result['success']:
-                history.file_path = result['path']
-                history.file_size = os.path.getsize(result['path'])
+                # Prześlij backup do wybranego magazynu
+                storage_result = StorageService.store_backup(result['path'], task)
+                
+                if storage_result['success']:
+                    # Aktualizujemy historię
+                    history.completed_at = timezone.now()
+                    history.status = 'success'
+                    history.file_path = storage_result['path']
+                    history.file_size = os.path.getsize(storage_result['path'])
+                    history.description = storage_result['message']  # Dodajemy informację o przesłaniu
+                else:
+                    # Błąd przesyłania
+                    history.completed_at = timezone.now()
+                    history.status = 'error'
+                    history.error_message = storage_result['message']
             else:
+                # Błąd backupu
+                history.completed_at = timezone.now()
+                history.status = 'error'
                 history.error_message = result['message']
             
             history.save()

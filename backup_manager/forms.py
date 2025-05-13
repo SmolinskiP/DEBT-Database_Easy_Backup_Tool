@@ -28,11 +28,12 @@ class BackupTaskForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['server'].queryset = DatabaseServer.objects.all().order_by('name')
-        self.fields['server'].empty_label = "-- Wybierz serwer --"
+        self.fields['server'].empty_label = "-- Select server --"
         
         # Inicjalizacja pól
         self.fields['time'].initial = datetime.time(1, 0)  # 01:00 AM
         self.fields['retain_count'].initial = 10
+        self.fields['storage_type'].initial = 'local'
         
         # Dodaj klasy CSS
         for field_name, field in self.fields.items():
@@ -43,11 +44,15 @@ class BackupTaskForm(forms.ModelForm):
         fields = [
             'name', 'server', 'frequency', 'time', 'day_of_week', 
             'day_of_month', 'enabled', 'retain_count',
-            'email_notification', 'email_address'
+            'email_notification', 'email_address',
+            'storage_type', 'remote_hostname', 'remote_port',
+            'remote_username', 'remote_password', 'remote_path',
+            'remote_key_file'
         ]
         widgets = {
             'time': forms.TimeInput(attrs={'type': 'time'}),
             'day_of_month': forms.NumberInput(attrs={'min': 1, 'max': 31}),
             'enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'email_notification': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'remote_password': forms.PasswordInput(),
         }

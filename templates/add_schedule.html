@@ -78,6 +78,46 @@
                         <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save Schedule</button>
                     </div>
+                    <div class="mb-3">
+    <label for="id_storage_type" class="form-label">Storage Type</label>
+    {{ form.storage_type }}
+</div>
+
+<div id="remote-storage-fields" style="display: none;">
+    <h5 class="mt-4 mb-3">Remote Storage Configuration</h5>
+    
+    <div class="mb-3">
+        <label for="id_remote_hostname" class="form-label">Server Hostname</label>
+        {{ form.remote_hostname }}
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_remote_port" class="form-label">Server Port</label>
+        {{ form.remote_port }}
+        <small class="form-text text-muted">Default: 21 for FTP, 22 for SFTP</small>
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_remote_username" class="form-label">Username</label>
+        {{ form.remote_username }}
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_remote_password" class="form-label">Password</label>
+        {{ form.remote_password }}
+    </div>
+    
+    <div class="mb-3 sftp-only" style="display: none;">
+        <label for="id_remote_key_file" class="form-label">SSH Key (optional)</label>
+        {{ form.remote_key_file }}
+    </div>
+    
+    <div class="mb-3">
+        <label for="id_remote_path" class="form-label">Remote Path</label>
+        {{ form.remote_path }}
+        <small class="form-text text-muted">Directory on remote server where backups will be stored</small>
+    </div>
+</div>
                 </form>
             </div>
         </div>
@@ -114,6 +154,28 @@
                 $('.email-field').hide();
             }
         }
+                function toggleStorageFields() {
+            const storageType = $('#id_storage_type').val();
+            
+            if (storageType === 'local') {
+                $('#remote-storage-fields').hide();
+            } else {
+                $('#remote-storage-fields').show();
+                
+                // Obsługa specyficznych pól SFTP
+                if (storageType === 'sftp') {
+                    $('.sftp-only').show();
+                } else {
+                    $('.sftp-only').hide();
+                }
+            }
+        }
+        
+        // Wywołaj przy załadowaniu strony
+        toggleStorageFields();
+        
+        // Wywołaj przy zmianie typu przechowywania
+        $('#id_storage_type').change(toggleStorageFields);
         
         // Call functions on startup
         toggleFrequencyFields();
