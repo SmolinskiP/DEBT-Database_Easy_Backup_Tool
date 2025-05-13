@@ -16,13 +16,13 @@ from datetime import datetime
 import os
 
 def dashboard_view(request):
-    """Główna strona - dashboard"""
+    """Main page - dashboard"""
     servers = DatabaseServer.objects.all().order_by('-created_at')
     
-    # Pobierz ostatnie backupy
+    # Get recent backups
     recent_backups = BackupHistory.objects.all().order_by('-started_at')[:5]
     
-    # Pobierz statystyki
+    # Get statistics
     scheduled_count = BackupTask.objects.filter(enabled=True).count()
     successful_backups = BackupHistory.objects.filter(status='success').count()
     failed_backups = BackupHistory.objects.filter(status='error').count()
@@ -128,7 +128,7 @@ def delete_server_view(request, server_id):
     return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
 
 def schedule_list_view(request):
-    """Lista harmonogramów backupów"""
+    """Backup schedules list"""
     tasks = BackupTask.objects.all().order_by('-created_at')
     
     context = {
@@ -137,17 +137,17 @@ def schedule_list_view(request):
     return render(request, 'schedule_list.html', context)
 
 def add_schedule_view(request):
-    """Dodawanie nowego harmonogramu backupu"""
+    """Adding a new backup schedule"""
     form = BackupTaskForm()
     
     if request.method == 'POST':
         form = BackupTaskForm(request.POST)
         if form.is_valid():
             task = form.save()
-            messages.success(request, f"Harmonogram '{task.name}' został utworzony.")
+            messages.success(request, f"Schedule '{task.name}' has been created.")
             return redirect('schedule_list')
         else:
-            messages.error(request, "Popraw błędy w formularzu.")
+            messages.error(request, "Please correct the form errors.")
     
     context = {
         'form': form,
@@ -155,7 +155,7 @@ def add_schedule_view(request):
     return render(request, 'add_schedule.html', context)
 
 def edit_schedule_view(request, task_id):
-    """Edycja harmonogramu backupu"""
+    """Editing backup schedule"""
     task = get_object_or_404(BackupTask, id=task_id)
     form = BackupTaskForm(instance=task)
     
@@ -163,10 +163,10 @@ def edit_schedule_view(request, task_id):
         form = BackupTaskForm(request.POST, instance=task)
         if form.is_valid():
             task = form.save()
-            messages.success(request, f"Harmonogram '{task.name}' został zaktualizowany.")
+            messages.success(request, f"Schedule '{task.name}' has been updated.")
             return redirect('schedule_list')
         else:
-            messages.error(request, "Popraw błędy w formularzu.")
+            messages.error(request, "Please correct the form errors.")
     
     context = {
         'form': form,
@@ -176,7 +176,7 @@ def edit_schedule_view(request, task_id):
 
 @csrf_exempt
 def delete_schedule_view(request, task_id):
-    """API endpoint do usuwania harmonogramu"""
+    """API endpoint for deleting a schedule"""
     if request.method == 'DELETE':
         try:
             task = BackupTask.objects.get(id=task_id)
@@ -184,88 +184,88 @@ def delete_schedule_view(request, task_id):
             task.delete()
             return JsonResponse({
                 'success': True, 
-                'message': f"Harmonogram '{task_name}' został usunięty."
+                'message': f"Schedule '{task_name}' has been deleted."
             })
         except BackupTask.DoesNotExist:
             return JsonResponse({
                 'success': False, 
-                'message': 'Harmonogram nie istnieje.'
+                'message': 'Schedule does not exist.'
             }, status=404)
         except Exception as e:
             return JsonResponse({
                 'success': False, 
-                'message': f'Błąd: {str(e)}'
+                'message': f'Error: {str(e)}'
             }, status=500)
     
     return JsonResponse({
         'success': False, 
-        'message': 'Nieprawidłowa metoda HTTP.'
+        'message': 'Invalid HTTP method.'
     }, status=405)
 
 @csrf_exempt
 def toggle_schedule_view(request, task_id):
-    """API endpoint do włączania/wyłączania harmonogramu"""
+    """API endpoint for enabling/disabling a schedule"""
     if request.method == 'POST':
         try:
             task = BackupTask.objects.get(id=task_id)
             task.enabled = not task.enabled
             task.save()
             
-            status = "włączony" if task.enabled else "wyłączony"
+            status = "enabled" if task.enabled else "disabled"
             return JsonResponse({
                 'success': True, 
                 'enabled': task.enabled,
-                'message': f"Harmonogram '{task.name}' został {status}."
+                'message': f"Schedule '{task.name}' has been {status}."
             })
         except BackupTask.DoesNotExist:
             return JsonResponse({
                 'success': False, 
-                'message': 'Harmonogram nie istnieje.'
+                'message': 'Schedule does not exist.'
             }, status=404)
         except Exception as e:
             return JsonResponse({
                 'success': False, 
-                'message': f'Błąd: {str(e)}'
+                'message': f'Error: {str(e)}'
             }, status=500)
     
     return JsonResponse({
         'success': False, 
-        'message': 'Nieprawidłowa metoda HTTP.'
+        'message': 'Invalid HTTP method.'
     }, status=405)
 
 @csrf_exempt
 def run_backup_now_view(request, task_id):
-    """API endpoint do ręcznego uruchomienia backupu z harmonogramu"""
+    """API endpoint for manually running a backup from a schedule"""
     if request.method == 'POST':
         try:
             task = BackupTask.objects.get(id=task_id)
             
-            # Uruchom zadanie Celery do wykonania backupu
+            # Run Celery task to perform backup
             execute_backup_task.delay(task.id)
             
             return JsonResponse({
                 'success': True,
-                'message': f"Backup dla '{task.name}' został uruchomiony. Sprawdź historię backupów za chwilę."
+                'message': f"Backup for '{task.name}' has been initiated. Check backup history shortly."
             })
         except BackupTask.DoesNotExist:
             return JsonResponse({
                 'success': False, 
-                'message': 'Harmonogram nie istnieje.'
+                'message': 'Schedule does not exist.'
             }, status=404)
         except Exception as e:
             return JsonResponse({
                 'success': False, 
-                'message': f'Błąd: {str(e)}'
+                'message': f'Error: {str(e)}'
             }, status=500)
     
     return JsonResponse({
         'success': False, 
-        'message': 'Nieprawidłowa metoda HTTP.'
+        'message': 'Invalid HTTP method.'
     }, status=405)
 
-# Widoki dla historii backupów
+# Backup history views
 def backup_history_view(request):
-    """Widok historii backupów"""
+    """Backup history view"""
     history = BackupHistory.objects.all().order_by('-started_at')
     
     context = {
@@ -274,7 +274,7 @@ def backup_history_view(request):
     return render(request, 'backup_history.html', context)
 
 def export_history_csv_view(request):
-    """Eksport historii backupów do CSV"""
+    """Export backup history to CSV"""
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="backup_history.csv"'
     
@@ -299,7 +299,7 @@ def export_history_csv_view(request):
     return response
 
 def backup_files_view(request):
-    """Widok listy plików backupu"""
+    """Backup files list view"""
     history = BackupHistory.objects.filter(status='success').order_by('-started_at')
     
     context = {
@@ -308,13 +308,13 @@ def backup_files_view(request):
     return render(request, 'backup_files.html', context)
 
 def download_backup_view(request, backup_id):
-    """Pobieranie pliku backupu"""
+    """Downloading a backup file"""
     backup = get_object_or_404(BackupHistory, id=backup_id, status='success')
     
     if not backup.file_path or not os.path.exists(backup.file_path):
-        raise Http404("Plik backupu nie istnieje")
+        raise Http404("Backup file does not exist")
     
-    # Otwórz plik i zwróć jako odpowiedź
+    # Open file and return as response
     file_path = backup.file_path
     filename = os.path.basename(file_path)
     
@@ -324,129 +324,129 @@ def download_backup_view(request, backup_id):
 
 @csrf_exempt
 def restore_backup_view(request, backup_id):
-    """Przywracanie backupu"""
+    """Restoring a backup"""
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
+        return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
     
     backup = get_object_or_404(BackupHistory, id=backup_id, status='success')
     
     if not backup.file_path or not os.path.exists(backup.file_path):
-        return JsonResponse({'success': False, 'message': 'Plik backupu nie istnieje'}, status=404)
+        return JsonResponse({'success': False, 'message': 'Backup file does not exist'}, status=404)
     
     try:
         filename = os.path.basename(backup.file_path)
-        # Utwórz wpis w historii o rozpoczęciu przywracania
+        # Create history entry for restore operation
         restore_history = BackupHistory.objects.create(
             server=backup.server,
             status='pending',
-            description=f"Przywracanie z backupu {filename}"  # Użyj nowego pola
+            description=f"Restoring from backup {filename}"  # Use new field
         )
         
-        # Uruchom zadanie przywracania w tle
+        # Launch restore task in background
         restore_backup_task.delay(backup_id, restore_history.id)
         
         return JsonResponse({
             'success': True,
-            'message': 'Przywracanie rozpoczęte. Sprawdź historię backupów, aby zobaczyć status.'
+            'message': 'Restore initiated. Check backup history to see status.'
         })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Błąd: {str(e)}'}, status=500)
-    """Przywracanie backupu"""
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
+    """Restoring a backup"""
     if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
+        return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
     
     backup = get_object_or_404(BackupHistory, id=backup_id, status='success')
     
     if not backup.file_path or not os.path.exists(backup.file_path):
-        return JsonResponse({'success': False, 'message': 'Plik backupu nie istnieje'}, status=404)
+        return JsonResponse({'success': False, 'message': 'Backup file does not exist'}, status=404)
     
     try:
-        # Utwórz wpis w historii o rozpoczęciu przywracania
+        # Create history entry for restore operation
         restore_history = BackupHistory.objects.create(
             server=backup.server,
             status='pending',
-            error_message=f"Przywracanie z backupu {os.path.basename(backup.file_path)}"
+            error_message=f"Restoring from backup {os.path.basename(backup.file_path)}"
         )
         
-        # Uruchom zadanie przywracania w tle
+        # Launch restore task in background
         restore_backup_task.delay(backup_id, restore_history.id)
         
         return JsonResponse({
             'success': True,
-            'message': 'Przywracanie rozpoczęte. Sprawdź historię backupów, aby zobaczyć status.'
+            'message': 'Restore initiated. Check backup history to see status.'
         })
     except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Błąd: {str(e)}'}, status=500)
+        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'}, status=500)
 
 @csrf_exempt
 def delete_backup_view(request, backup_id):
-    """API endpoint do usuwania backupu"""
+    """API endpoint for deleting a backup"""
     if request.method != 'DELETE':
-        return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
+        return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
     
     try:
         backup = BackupHistory.objects.get(id=backup_id)
         
-        # Usuń plik jeśli istnieje
+        # Delete file if exists
         if backup.file_path and os.path.exists(backup.file_path):
             try:
                 os.remove(backup.file_path)
             except OSError as e:
                 return JsonResponse({
                     'success': False, 
-                    'message': f'Nie można usunąć pliku: {str(e)}'
+                    'message': f'Cannot delete file: {str(e)}'
                 }, status=500)
         
-        # Usuń wpis z bazy
+        # Delete database entry
         backup_name = backup.get_filename() if backup.file_path else f"#{backup.id}"
         backup.delete()
         
         return JsonResponse({
             'success': True, 
-            'message': f'Backup {backup_name} został usunięty.'
+            'message': f'Backup {backup_name} has been deleted.'
         })
     except BackupHistory.DoesNotExist:
         return JsonResponse({
             'success': False, 
-            'message': 'Backup nie istnieje.'
+            'message': 'Backup does not exist.'
         }, status=404)
     except Exception as e:
         return JsonResponse({
             'success': False, 
-            'message': f'Błąd: {str(e)}'
+            'message': f'Error: {str(e)}'
         }, status=500)
 
 @csrf_exempt
 def delete_history_view(request, history_id):
-    """API endpoint do usuwania wpisu historii (z opcjonalnym usunięciem pliku)"""
+    """API endpoint for deleting a history entry (with optional file deletion)"""
     if request.method != 'DELETE':
-        return JsonResponse({'success': False, 'message': 'Nieprawidłowa metoda HTTP'}, status=405)
+        return JsonResponse({'success': False, 'message': 'Invalid HTTP method'}, status=405)
     
     try:
         history = BackupHistory.objects.get(id=history_id)
         
-        # Sprawdź czy istnieje plik i usuń go jeśli tak
+        # Check if file exists and delete it if so
         if history.file_path and os.path.exists(history.file_path):
             try:
                 os.remove(history.file_path)
             except OSError as e:
-                # Loguj błąd, ale kontynuuj usuwanie wpisu
-                print(f"Błąd usuwania pliku: {str(e)}")
+                # Log error but continue deleting entry
+                print(f"Error deleting file: {str(e)}")
         
         history_id = history.id
         history.delete()
         
         return JsonResponse({
             'success': True, 
-            'message': f'Wpis historii #{history_id} został usunięty wraz z powiązanym plikiem.'
+            'message': f'History entry #{history_id} has been deleted along with associated file.'
         })
     except BackupHistory.DoesNotExist:
         return JsonResponse({
             'success': False, 
-            'message': 'Wpis historii nie istnieje.'
+            'message': 'History entry does not exist.'
         }, status=404)
     except Exception as e:
         return JsonResponse({
             'success': False, 
-            'message': f'Błąd: {str(e)}'
+            'message': f'Error: {str(e)}'
         }, status=500)

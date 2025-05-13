@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Pliki Backupów - DB Backup Tool{% endblock %}
+{% block title %}Backup Files - DB Backup Tool{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12 d-flex justify-content-between align-items-center">
-        <h1 class="mb-0">Pliki Backupów</h1>
+        <h1 class="mb-0">Backup Files</h1>
     </div>
 </div>
 
@@ -16,11 +16,11 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Nazwa pliku</th>
-                            <th>Serwer</th>
-                            <th>Data utworzenia</th>
-                            <th>Rozmiar</th>
-                            <th>Akcje</th>
+                            <th>Filename</th>
+                            <th>Server</th>
+                            <th>Creation Date</th>
+                            <th>Size</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -40,18 +40,18 @@
                                     <td>
                                         <div class="btn-group">
         <a href="{% url 'download_backup' backup.id %}" class="btn btn-sm btn-outline-primary me-1">
-            <i class="bi bi-download"></i> Pobierz
+            <i class="bi bi-download"></i> Download
         </a>
         {% if backup.is_restorable %}
             <button class="btn btn-sm btn-outline-warning restore-backup-btn me-1" 
                     data-backup-id="{{ backup.id }}"
                     data-server-name="{{ backup.server.name }}"
                     data-file-name="{{ backup.get_filename }}">
-                <i class="bi bi-arrow-counterclockwise"></i> Przywróć
+                <i class="bi bi-arrow-counterclockwise"></i> Restore
             </button>
         {% endif %}
         <button type="button" class="btn btn-sm btn-outline-danger delete-backup-btn" data-backup-id="{{ backup.id }}" data-file-name="{{ backup.get_filename }}">
-            <i class="bi bi-trash"></i> Usuń
+            <i class="bi bi-trash"></i> Delete
         </button>
                                         </div>
                                     </td>
@@ -65,10 +65,10 @@
             <div class="card">
                 <div class="card-body text-center py-5">
                     <i class="bi bi-file-earmark-zip fs-1 text-muted"></i>
-                    <h4 class="mt-3">Brak plików backupu</h4>
-                    <p class="text-muted">Pliki pojawią się po wykonaniu pierwszego pomyślnego backupu.</p>
+                    <h4 class="mt-3">No backup files</h4>
+                    <p class="text-muted">Files will appear after completing the first successful backup.</p>
                     <a href="{% url 'schedule_list' %}" class="btn btn-primary mt-2">
-                        <i class="bi bi-calendar-check"></i> Przejdź do harmonogramu
+                        <i class="bi bi-calendar-check"></i> Go to schedule
                     </a>
                 </div>
             </div>
@@ -76,63 +76,63 @@
     </div>
 </div>
 
-<!-- Modal potwierdzenia przywrócenia -->
+<!-- Restore confirmation modal -->
 <div class="modal fade" id="restoreBackupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Potwierdź przywrócenie</h5>
+                <h5 class="modal-title">Confirm Restore</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle-fill"></i> <strong>Uwaga!</strong> Ta operacja nadpisze dane w bazie danych.
+                    <i class="bi bi-exclamation-triangle-fill"></i> <strong>Warning!</strong> This operation will overwrite data in the database.
                 </div>
-                <p>Czy na pewno chcesz przywrócić backup:</p>
+                <p>Are you sure you want to restore the backup:</p>
                 <p><strong id="restoreFileName"></strong></p>
-                <p>do serwera: <strong id="restoreServerName"></strong>?</p>
+                <p>to server: <strong id="restoreServerName"></strong>?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                <button type="button" class="btn btn-warning" id="confirmRestore">Przywróć</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmRestore">Restore</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal komunikatu -->
+<!-- Message modal -->
 <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Komunikat</h5>
+                <h5 class="modal-title">Message</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="messageContent" class="alert"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal potwierdzenia usunięcia backupu -->
+<!-- Backup deletion confirmation modal -->
 <div class="modal fade" id="deleteBackupModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Potwierdź usunięcie</h5>
+                <h5 class="modal-title">Confirm Deletion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Czy na pewno chcesz usunąć backup <strong id="backupFileNameToDelete"></strong>?</p>
-                <p>Ta operacja usunie plik backupu i wpis z historii. Nie można jej cofnąć.</p>
+                <p>Are you sure you want to delete the backup <strong id="backupFileNameToDelete"></strong>?</p>
+                <p>This operation will delete the backup file and its history entry. It cannot be undone.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBackup">Usuń</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBackup">Delete</button>
             </div>
         </div>
     </div>
@@ -143,7 +143,7 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Obsługa przywracania backupu
+        // Backup restore handler
         let backupIdToRestore = null;
         
         $('.restore-backup-btn').click(function() {
@@ -158,9 +158,9 @@
         
         $('#confirmRestore').click(function() {
             if (backupIdToRestore) {
-                // Zablokuj przycisk podczas przetwarzania
+                // Disable button during processing
                 $(this).prop('disabled', true);
-                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Przywracanie...');
+                $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Restoring...');
                 
                 $.ajax({
                     url: '/api/backups/restore/' + backupIdToRestore + '/',
@@ -168,11 +168,11 @@
                     success: function(response) {
                         $('#restoreBackupModal').modal('hide');
                         
-                        // Wyświetl komunikat
+                        // Display message
                         $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
                         $('#messageModal').modal('show');
                         
-                        // Po zamknięciu modalu odśwież stronę
+                        // Refresh page after closing modal
                         $('#messageModal').on('hidden.bs.modal', function() {
                             location.reload();
                         });
@@ -180,8 +180,8 @@
                     error: function(xhr, status, error) {
                         $('#restoreBackupModal').modal('hide');
                         
-                        // Wyświetl błąd
-                        let errorMsg = 'Wystąpił błąd podczas przywracania backupu.';
+                        // Display error
+                        let errorMsg = 'An error occurred during backup restoration.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMsg = xhr.responseJSON.message;
                         }
@@ -190,9 +190,9 @@
                         $('#messageModal').modal('show');
                     },
                     complete: function() {
-                        // Odblokoj przycisk
+                        // Enable button
                         $('#confirmRestore').prop('disabled', false);
-                        $('#confirmRestore').html('Przywróć');
+                        $('#confirmRestore').html('Restore');
                     }
                 });
             }
@@ -210,9 +210,9 @@
 
     $('#confirmDeleteBackup').click(function() {
         if (backupIdToDelete) {
-            // Zablokuj przycisk podczas przetwarzania
+            // Disable button during processing
             $(this).prop('disabled', true);
-            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Usuwanie...');
+            $(this).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...');
             
             $.ajax({
                 url: '/api/backups/delete/' + backupIdToDelete + '/',
@@ -220,11 +220,11 @@
                 success: function(response) {
                     $('#deleteBackupModal').modal('hide');
                     
-                    // Wyświetl komunikat
+                    // Display message
                     $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
                     $('#messageModal').modal('show');
                     
-                    // Po zamknięciu modalu odśwież stronę
+                    // Refresh page after closing modal
                     $('#messageModal').on('hidden.bs.modal', function() {
                         location.reload();
                     });
@@ -232,8 +232,8 @@
                 error: function(xhr, status, error) {
                     $('#deleteBackupModal').modal('hide');
                     
-                    // Wyświetl błąd
-                    let errorMsg = 'Wystąpił błąd podczas usuwania backupu.';
+                    // Display error
+                    let errorMsg = 'An error occurred while deleting the backup.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
@@ -242,9 +242,9 @@
                     $('#messageModal').modal('show');
                 },
                 complete: function() {
-                    // Odblokuj przycisk
+                    // Enable button
                     $('#confirmDeleteBackup').prop('disabled', false);
-                    $('#confirmDeleteBackup').html('Usuń');
+                    $('#confirmDeleteBackup').html('Delete');
                 }
             });
         }

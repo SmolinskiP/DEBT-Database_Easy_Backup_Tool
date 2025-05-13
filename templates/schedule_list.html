@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
 
-{% block title %}Harmonogram Backupów - DB Backup Tool{% endblock %}
+{% block title %}Backup Schedule - DB Backup Tool{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12 d-flex justify-content-between align-items-center">
-        <h1 class="mb-0">Harmonogram Backupów</h1>
+        <h1 class="mb-0">Backup Schedule</h1>
         <a href="{% url 'add_schedule' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Dodaj nowy harmonogram
+            <i class="bi bi-plus-circle"></i> Add New Schedule
         </a>
     </div>
 </div>
@@ -19,12 +19,12 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Nazwa</th>
-                            <th>Serwer</th>
-                            <th>Częstotliwość</th>
-                            <th>Następne wykonanie</th>
+                            <th>Name</th>
+                            <th>Server</th>
+                            <th>Frequency</th>
+                            <th>Next Execution</th>
                             <th>Status</th>
-                            <th>Akcje</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -37,9 +37,9 @@
                                     {% if task.frequency == 'weekly' and task.day_of_week is not None %}
                                         ({{ task.get_day_of_week_display }})
                                     {% elif task.frequency == 'monthly' and task.day_of_month %}
-                                        ({{ task.day_of_month }} dzień)
+                                        ({{ task.day_of_month }} day)
                                     {% endif %}
-                                    o {{ task.time|time:"H:i" }}
+                                    at {{ task.time|time:"H:i" }}
                                 </td>
                                 <td>
                                     {% if task.next_run %}
@@ -50,28 +50,28 @@
                                 </td>
                                 <td>
                                     {% if task.enabled %}
-                                        <span class="badge bg-success">Aktywny</span>
+                                        <span class="badge bg-success">Active</span>
                                     {% else %}
-                                        <span class="badge bg-danger">Wyłączony</span>
+                                        <span class="badge bg-danger">Disabled</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     <div class="btn-group">
         <button type="button" class="btn btn-sm btn-outline-primary run-now-btn me-1" data-task-id="{{ task.id }}">
-            <i class="bi bi-play-fill"></i> Uruchom teraz
+            <i class="bi bi-play-fill"></i> Run Now
         </button>
         <button type="button" class="btn btn-sm {% if task.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %} toggle-btn me-1" data-task-id="{{ task.id }}">
             {% if task.enabled %}
-                <i class="bi bi-pause-fill"></i> Wyłącz
+                <i class="bi bi-pause-fill"></i> Disable
             {% else %}
-                <i class="bi bi-play-fill"></i> Włącz
+                <i class="bi bi-play-fill"></i> Enable
             {% endif %}
         </button>
         <a href="{% url 'edit_schedule' task.id %}" class="btn btn-sm btn-outline-secondary me-1">
-            <i class="bi bi-pencil"></i> Edytuj
+            <i class="bi bi-pencil"></i> Edit
         </a>
         <button type="button" class="btn btn-sm btn-outline-danger delete-task-btn" data-task-id="{{ task.id }}" data-task-name="{{ task.name }}">
-            <i class="bi bi-trash"></i> Usuń
+            <i class="bi bi-trash"></i> Delete
         </button>
                                     </div>
                                 </td>
@@ -84,10 +84,10 @@
             <div class="card">
                 <div class="card-body text-center py-5">
                     <i class="bi bi-calendar-check fs-1 text-muted"></i>
-                    <h4 class="mt-3">Brak zaplanowanych zadań</h4>
-                    <p class="text-muted">Dodaj pierwszy harmonogram, aby zautomatyzować backupy.</p>
+                    <h4 class="mt-3">No scheduled tasks</h4>
+                    <p class="text-muted">Add your first schedule to automate backups.</p>
                     <a href="{% url 'add_schedule' %}" class="btn btn-primary mt-2">
-                        <i class="bi bi-plus-circle"></i> Dodaj harmonogram
+                        <i class="bi bi-plus-circle"></i> Add Schedule
                     </a>
                 </div>
             </div>
@@ -95,39 +95,39 @@
     </div>
 </div>
 
-<!-- Modal potwierdzenia usunięcia -->
+<!-- Delete confirmation modal -->
 <div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Potwierdź usunięcie</h5>
+                <h5 class="modal-title">Confirm Deletion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Czy na pewno chcesz usunąć harmonogram <strong id="taskNameToDelete"></strong>?</p>
-                <p>Ta operacja nie może być cofnięta.</p>
+                <p>Are you sure you want to delete the schedule <strong id="taskNameToDelete"></strong>?</p>
+                <p>This operation cannot be undone.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteTask">Usuń</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteTask">Delete</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal komunikatu -->
+<!-- Message modal -->
 <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content bg-dark">
             <div class="modal-header">
-                <h5 class="modal-title">Komunikat</h5>
+                <h5 class="modal-title">Message</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div id="messageContent" class="alert"></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -137,7 +137,7 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Obsługa usuwania harmonogramu
+        // Schedule deletion handler
         let taskIdToDelete = null;
         
         $('.delete-task-btn').click(function() {
@@ -155,11 +155,11 @@
                     success: function(response) {
                         $('#deleteTaskModal').modal('hide');
                         
-                        // Wyświetl komunikat
+                        // Display message
                         $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
                         $('#messageModal').modal('show');
                         
-                        // Po zamknięciu modalu odśwież stronę
+                        // Refresh page after closing modal
                         $('#messageModal').on('hidden.bs.modal', function() {
                             location.reload();
                         });
@@ -167,8 +167,8 @@
                     error: function(xhr, status, error) {
                         $('#deleteTaskModal').modal('hide');
                         
-                        // Wyświetl błąd
-                        let errorMsg = 'Wystąpił błąd podczas usuwania harmonogramu.';
+                        // Display error
+                        let errorMsg = 'An error occurred while deleting the schedule.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMsg = xhr.responseJSON.message;
                         }
@@ -180,42 +180,42 @@
             }
         });
         
-        // Obsługa włączania/wyłączania harmonogramu
+        // Enable/disable schedule handler
         $('.toggle-btn').click(function() {
             const button = $(this);
             const taskId = button.data('task-id');
             
-            // Zablokuj przycisk podczas przetwarzania
+            // Disable button during processing
             button.prop('disabled', true);
             
             $.ajax({
                 url: '/api/schedules/' + taskId + '/toggle/',
                 type: 'POST',
                 success: function(response) {
-                    // Odblokuj przycisk
+                    // Enable button
                     button.prop('disabled', false);
                     
-                    // Aktualizuj UI
+                    // Update UI
                     if (response.enabled) {
                         button.removeClass('btn-outline-success').addClass('btn-outline-danger');
-                        button.html('<i class="bi bi-pause-fill"></i> Wyłącz');
-                        button.closest('tr').find('.badge').removeClass('bg-danger').addClass('bg-success').text('Aktywny');
+                        button.html('<i class="bi bi-pause-fill"></i> Disable');
+                        button.closest('tr').find('.badge').removeClass('bg-danger').addClass('bg-success').text('Active');
                     } else {
                         button.removeClass('btn-outline-danger').addClass('btn-outline-success');
-                        button.html('<i class="bi bi-play-fill"></i> Włącz');
-                        button.closest('tr').find('.badge').removeClass('bg-success').addClass('bg-danger').text('Wyłączony');
+                        button.html('<i class="bi bi-play-fill"></i> Enable');
+                        button.closest('tr').find('.badge').removeClass('bg-success').addClass('bg-danger').text('Disabled');
                     }
                     
-                    // Wyświetl komunikat
+                    // Display message
                     $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
                     $('#messageModal').modal('show');
                 },
                 error: function(xhr, status, error) {
-                    // Odblokuj przycisk
+                    // Enable button
                     button.prop('disabled', false);
                     
-                    // Wyświetl błąd
-                    let errorMsg = 'Wystąpił błąd podczas zmiany statusu harmonogramu.';
+                    // Display error
+                    let errorMsg = 'An error occurred while changing the schedule status.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }
@@ -226,34 +226,34 @@
             });
         });
         
-        // Obsługa ręcznego uruchomienia backupu
+        // Manual backup run handler
         $('.run-now-btn').click(function() {
             const button = $(this);
             const taskId = button.data('task-id');
             
-            // Zablokuj przycisk podczas przetwarzania
+            // Disable button during processing
             button.prop('disabled', true);
-            button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uruchamianie...');
+            button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Running...');
             
             $.ajax({
                 url: '/api/schedules/' + taskId + '/run-now/',
                 type: 'POST',
                 success: function(response) {
-                    // Odblokuj przycisk
+                    // Enable button
                     button.prop('disabled', false);
-                    button.html('<i class="bi bi-play-fill"></i> Uruchom teraz');
+                    button.html('<i class="bi bi-play-fill"></i> Run Now');
                     
-                    // Wyświetl komunikat
+                    // Display message
                     $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
                     $('#messageModal').modal('show');
                 },
                 error: function(xhr, status, error) {
-                    // Odblokuj przycisk
+                    // Enable button
                     button.prop('disabled', false);
-                    button.html('<i class="bi bi-play-fill"></i> Uruchom teraz');
+                    button.html('<i class="bi bi-play-fill"></i> Run Now');
                     
-                    // Wyświetl błąd
-                    let errorMsg = 'Wystąpił błąd podczas uruchamiania backupu.';
+                    // Display error
+                    let errorMsg = 'An error occurred while starting the backup.';
                     if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMsg = xhr.responseJSON.message;
                     }

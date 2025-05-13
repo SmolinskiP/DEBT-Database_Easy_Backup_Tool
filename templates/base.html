@@ -91,7 +91,7 @@
         background-color: #ffc107;
     }
     
-    /* Poprawki dla czytelności tabel */
+    /* Table readability improvements */
     .table {
         color: var(--text-primary);
         border-color: var(--border-color);
@@ -107,7 +107,7 @@
         vertical-align: middle;
     }
     
-    /* Poprawa czytelności tekstu */
+    /* Text readability improvement */
     .text-muted {
         color: #adb5bd !important;
     }
@@ -175,7 +175,7 @@
         border-top: 1px solid var(--border-color);
     }
     
-    /* Style dla menu użytkownika */
+    /* User menu styles */
     .user-dropdown .dropdown-toggle::after {
         vertical-align: middle;
     }
@@ -186,7 +186,7 @@
         left: auto;
     }
     
-    /* Aktywny stan dla menu użytkownika */
+    /* Active state for user menu */
     .navbar .dropdown-item.active, 
     .navbar .dropdown-item:active {
         background-color: var(--accent-primary);
@@ -212,24 +212,24 @@
     padding: 0;
 }
 .user-dropdown .dropdown-toggle {
-    color: var(--accent-primary) !important; /* Używamy koloru akcentowego zamiast domyślnego */
-    font-weight: 500; /* Nieco pogrubiony tekst */
+    color: var(--accent-primary) !important; /* Using accent color instead of default */
+    font-weight: 500; /* Slightly bolder text */
 }
 
 .user-dropdown .dropdown-toggle:hover,
 .user-dropdown .dropdown-toggle:focus,
 .user-dropdown.show .dropdown-toggle {
-    color: white !important; /* Biały tekst przy hover i focus */
-    background-color: rgba(121, 82, 179, 0.2); /* Lekkie podświetlenie tła */
+    color: white !important; /* White text on hover and focus */
+    background-color: rgba(121, 82, 179, 0.2); /* Light background highlight */
 }
 
-/* Wyraźniejsza ikona użytkownika */
+/* More pronounced user icon */
 .user-dropdown .bi-person-circle {
     color: var(--accent-primary);
     margin-right: 5px;
 }
 
-/* Podświetlenie całego dropdown po otwarciu */
+/* Highlight entire dropdown when open */
 .user-dropdown.show {
     background-color: rgba(121, 82, 179, 0.1);
     border-radius: 4px;
@@ -237,17 +237,17 @@
 .username-text {
     position: relative;
     z-index: 1;
-    text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.8); /* Cień tekstu dla większej czytelności */
+    text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.8); /* Text shadow for better readability */
 }
 
-/* Stylizacja przycisków w dropdown */
+/* Button styling in dropdown */
 .dropdown-item {
     border-radius: 4px;
     margin: 2px 5px;
     padding: 6px 10px;
 }
 
-/* Stylizacja przycisku wylogowania, aby wyglądał jak link */
+/* Style logout button to look like a link */
 #logout-form .dropdown-item {
     color: var(--text-secondary);
     text-align: left;
@@ -264,15 +264,15 @@
 }
 
 .action-buttons .btn {
-    margin-right: 4px; /* Dodatkowa przestrzeń między przyciskami */
-    border-radius: 4px; /* Bardziej zaokrąglone rogi */
+    margin-right: 4px; /* Extra space between buttons */
+    border-radius: 4px; /* More rounded corners */
 }
 
 .action-buttons .btn:last-child {
-    margin-right: 0; /* Usuń margines z ostatniego przycisku */
+    margin-right: 0; /* Remove margin from last button */
 }
 
-/* Opcjonalne: poprawa wyglądu przycisków przy hover */
+/* Optional: improved button appearance on hover */
 .btn-outline-primary:hover {
     background-color: rgba(121, 82, 179, 0.15);
     border-color: var(--accent-primary);
@@ -324,26 +324,26 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/servers/' %}active{% endif %}" href="{% url 'server_list' %}">
-                            <i class="bi bi-hdd-network"></i> Serwery
+                            <i class="bi bi-hdd-network"></i> Servers
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/schedules/' %}active{% endif %}" href="{% url 'schedule_list' %}">
-                            <i class="bi bi-calendar-check"></i> Harmonogram
+                            <i class="bi bi-calendar-check"></i> Schedule
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/history/' %}active{% endif %}" href="{% url 'backup_history' %}">
-                            <i class="bi bi-clock-history"></i> Historia
+                            <i class="bi bi-clock-history"></i> History
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/backups/' %}active{% endif %}" href="{% url 'backup_files' %}">
-                            <i class="bi bi-file-earmark-zip"></i> Backupy
+                            <i class="bi bi-file-earmark-zip"></i> Backups
                         </a>
                     </li>
                 </ul>
-<!-- Zaktualizowany HTML dla menu użytkownika w templates/base.html -->
+<!-- Updated HTML for user menu in templates/base.html -->
 <ul class="navbar-nav ms-auto">
     {% if user.is_authenticated %}
     <li class="nav-item dropdown user-dropdown">
@@ -353,14 +353,14 @@
         </a>
         <ul class="dropdown-menu" aria-labelledby="userDropdown">
             <li><a class="dropdown-item" href="{% url 'password_change' %}">
-                <i class="bi bi-key me-2"></i>Zmień hasło
+                <i class="bi bi-key me-2"></i>Change password
             </a></li>
             <li><hr class="dropdown-divider"></li>
             <li>
                 <form method="post" action="{% url 'logout' %}" id="logout-form">
                     {% csrf_token %}
                     <button type="submit" class="dropdown-item">
-                        <i class="bi bi-box-arrow-right me-2"></i>Wyloguj się
+                        <i class="bi bi-box-arrow-right me-2"></i>Logout
                     </button>
                 </form>
             </li>
@@ -369,7 +369,7 @@
     {% else %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'login' %}">
-            <i class="bi bi-box-arrow-in-right"></i> Zaloguj się
+            <i class="bi bi-box-arrow-in-right"></i> Login
         </a>
     </li>
     {% endif %}
@@ -396,4 +396,3 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
-

@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Dodaj Harmonogram - DB Backup Tool{% endblock %}
+{% block title %}Add Schedule - DB Backup Tool{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col-md-12">
-        <h1 class="mb-4">Dodaj Nowy Harmonogram Backupu</h1>
+        <h1 class="mb-4">Add New Backup Schedule</h1>
     </div>
 </div>
 
@@ -13,19 +13,19 @@
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Konfiguracja harmonogramu</h5>
+                <h5 class="mb-0">Schedule Configuration</h5>
             </div>
             <div class="card-body">
                 <form method="post" id="schedule-form">
                     {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="id_name" class="form-label">Nazwa harmonogramu</label>
+                        <label for="id_name" class="form-label">Schedule Name</label>
                         {{ form.name }}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_server" class="form-label">Serwer bazy danych</label>
+                        <label for="id_server" class="form-label">Database Server</label>
                         {{ form.server }}
                         {% if form.server.errors %}
                             <div class="text-danger mt-1">{{ form.server.errors }}</div>
@@ -33,50 +33,50 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_frequency" class="form-label">Częstotliwość</label>
+                        <label for="id_frequency" class="form-label">Frequency</label>
                         {{ form.frequency }}
                     </div>
                     
                     <div class="mb-3 time-field">
-                        <label for="id_time" class="form-label">Czas wykonania</label>
+                        <label for="id_time" class="form-label">Execution Time</label>
                         {{ form.time }}
                     </div>
                     
                     <div class="mb-3 day-of-week-field">
-                        <label for="id_day_of_week" class="form-label">Dzień tygodnia</label>
+                        <label for="id_day_of_week" class="form-label">Day of Week</label>
                         {{ form.day_of_week }}
                     </div>
                     
                     <div class="mb-3 day-of-month-field">
-                        <label for="id_day_of_month" class="form-label">Dzień miesiąca</label>
+                        <label for="id_day_of_month" class="form-label">Day of Month</label>
                         {{ form.day_of_month }}
-                        <small class="form-text text-muted">Wartość od 1 do 31. Jeśli dany miesiąc nie ma tylu dni, backup zostanie wykonany w ostatnim dniu.</small>
+                        <small class="form-text text-muted">Value from 1 to 31. If the month doesn't have that many days, the backup will be executed on the last day.</small>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="id_retain_count" class="form-label">Liczba przechowywanych backupów</label>
+                        <label for="id_retain_count" class="form-label">Number of Backups to Keep</label>
                         {{ form.retain_count }}
-                        <small class="form-text text-muted">Starsze backupy będą automatycznie usuwane. Ustaw 0, aby zachować wszystkie.</small>
+                        <small class="form-text text-muted">Older backups will be automatically deleted. Set to 0 to keep all backups.</small>
                     </div>
                     
                     <div class="mb-3 form-check form-switch">
                         {{ form.enabled }}
-                        <label class="form-check-label" for="id_enabled">Aktywny</label>
+                        <label class="form-check-label" for="id_enabled">Active</label>
                     </div>
                     
                     <div class="mb-3 form-check form-switch">
                         {{ form.email_notification }}
-                        <label class="form-check-label" for="id_email_notification">Powiadomienia e-mail</label>
+                        <label class="form-check-label" for="id_email_notification">Email Notifications</label>
                     </div>
                     
                     <div class="mb-3 email-field">
-                        <label for="id_email_address" class="form-label">Adres e-mail</label>
+                        <label for="id_email_address" class="form-label">Email Address</label>
                         {{ form.email_address }}
                     </div>
                     
                     <div class="d-flex justify-content-between">
-                        <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Anuluj</a>
-                        <button type="submit" class="btn btn-primary">Zapisz harmonogram</button>
+                        <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Schedule</button>
                     </div>
                 </form>
             </div>
@@ -88,17 +88,17 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Popraw klasy dla checkboxów
+        // Fix classes for checkboxes
         $('#id_enabled, #id_email_notification').removeClass('form-control').addClass('form-check-input');
         
-        // Funkcja ukrywania/pokazywania pól zależnych od częstotliwości
+        // Function to hide/show fields depending on frequency
         function toggleFrequencyFields() {
             const frequency = $('#id_frequency').val();
             
-            // Ukryj wszystkie pola zależne
+            // Hide all dependent fields
             $('.day-of-week-field, .day-of-month-field').hide();
             
-            // Pokaż odpowiednie pola
+            // Show appropriate fields
             if (frequency === 'weekly') {
                 $('.day-of-week-field').show();
             } else if (frequency === 'monthly') {
@@ -106,7 +106,7 @@
             }
         }
         
-        // Funkcja ukrywania/pokazywania pola email
+        // Function to hide/show email field
         function toggleEmailField() {
             if ($('#id_email_notification').is(':checked')) {
                 $('.email-field').show();
@@ -115,11 +115,11 @@
             }
         }
         
-        // Wywołanie funkcji przy starcie
+        // Call functions on startup
         toggleFrequencyFields();
         toggleEmailField();
         
-        // Obsługa zmiany
+        // Handle changes
         $('#id_frequency').change(toggleFrequencyFields);
         $('#id_email_notification').change(toggleEmailField);
     });

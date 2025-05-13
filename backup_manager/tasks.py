@@ -1,4 +1,3 @@
-# tasks.py
 import os
 import datetime
 import subprocess
@@ -12,10 +11,8 @@ from .services import BackupService
 
 @shared_task
 def run_scheduled_backups():
-    """Główne zadanie do sprawdzania i uruchamiania zaplanowanych backupów"""
     now = timezone.now()
     
-    # Znajdź wszystkie zadania, które powinny być uruchomione
     due_tasks = BackupTask.objects.filter(
         enabled=True,
         next_run__lte=now
@@ -26,12 +23,10 @@ def run_scheduled_backups():
 
 @shared_task
 def execute_backup_task(task_id):
-    """Wykonuje pojedyncze zadanie backupu"""
     try:
         task = BackupTask.objects.get(id=task_id)
         server = task.server
-        
-        # Utwórz wpis w historii
+
         history = BackupHistory.objects.create(
             server=server,
             task=task,
@@ -39,11 +34,9 @@ def execute_backup_task(task_id):
         )
         
         try:
-            # Wykonaj backup
             backup_service = BackupService(server.id)
             result = backup_service.execute_backup()
             
-            # Aktualizuj historię
             history.completed_at = timezone.now()
             history.status = 'success' if result['success'] else 'error'
             
@@ -55,76 +48,64 @@ def execute_backup_task(task_id):
             
             history.save()
             
-            # Aktualizuj ostatnie uruchomienie zadania
             task.last_run = timezone.now()
-            task._calculate_next_run()  # Oblicz następne uruchomienie
+            task._calculate_next_run()
             task.save()
-            
-            # Usuń stare backupy jeśli przekroczono limit
+
             _cleanup_old_backups(server.id, task.retain_count)
             
-            # Wyślij powiadomienie email jeśli włączone
             if task.email_notification and task.email_address:
                 _send_backup_notification(task, history, result)
                 
         except Exception as e:
-            # Ważne - dodaj print aby zobaczyć błąd w logach
             import traceback
             print(f"BACKUP ERROR: {str(e)}")
             print(traceback.format_exc())
             
-            # Obsługa błędów
             history.status = 'error'
             history.error_message = str(e)
             history.completed_at = timezone.now()
             history.save()
             
     except Exception as e:
-        # Logowanie błędu głównego
         import traceback
         print(f"MAIN TASK ERROR: {str(e)}")
         print(traceback.format_exc())
 
 def _cleanup_old_backups(server_id, retain_count):
-    """Usuwa stare backupy, zachowując tylko określoną liczbę"""
     if retain_count <= 0:
-        return  # Zachowaj wszystkie
+        return 
         
-    # Pobierz historię backupów dla tego serwera
     history_entries = BackupHistory.objects.filter(
         server_id=server_id,
         status='success'
     ).order_by('-completed_at')
     
-    # Jeśli mamy więcej niż limit, usuń nadmiarowe
     if history_entries.count() > retain_count:
         for entry in history_entries[retain_count:]:
             try:
-                # Usuń plik backupu
                 if entry.file_path and os.path.exists(entry.file_path):
                     os.remove(entry.file_path)
-                # Nie usuwaj wpisu w historii
             except Exception as e:
-                print(f"Błąd podczas usuwania starego backupu: {str(e)}")
+                print(f"Error while deleting old backup: {str(e)}")
 
 def _send_backup_notification(task, history, result):
-    """Wysyła powiadomienie email o wyniku backupu"""
-    subject = f"Backup {task.server.name}: {'Sukces' if result['success'] else 'Błąd'}"
+    subject = f"Backup {task.server.name}: {'Success' if result['success'] else 'Error'}"
     
     if result['success']:
         message = (
-            f"Backup serwera {task.server.name} zakończony powodzeniem.\n\n"
-            f"Czas rozpoczęcia: {history.started_at}\n"
-            f"Czas zakończenia: {history.completed_at}\n"
-            f"Rozmiar pliku: {history.file_size / (1024*1024):.2f} MB\n"
-            f"Ścieżka: {history.file_path}"
+            f"Backup of server {task.server.name} completed successfully.\n\n"
+            f"Start time: {history.started_at}\n"
+            f"End time: {history.completed_at}\n"
+            f"File size: {history.file_size / (1024*1024):.2f} MB\n"
+            f"Path: {history.file_path}"
         )
     else:
         message = (
-            f"Backup serwera {task.server.name} zakończony niepowodzeniem.\n\n"
-            f"Czas rozpoczęcia: {history.started_at}\n"
-            f"Czas zakończenia: {history.completed_at}\n"
-            f"Błąd: {history.error_message}"
+            f"Backup of server {task.server.name} failed.\n\n"
+            f"Start time: {history.started_at}\n"
+            f"End time: {history.completed_at}\n"
+            f"Error: {history.error_message}"
         )
     
     send_mail(
@@ -137,32 +118,27 @@ def _send_backup_notification(task, history, result):
 
 @shared_task
 def restore_backup_task(backup_id, history_id):
-    """Przywraca backup z pliku"""
     try:
         backup = BackupHistory.objects.get(id=backup_id)
         history = BackupHistory.objects.get(id=history_id)
         server = backup.server
         
         if not backup.file_path or not os.path.exists(backup.file_path):
-            raise FileNotFoundError("Plik backupu nie istnieje")
+            raise FileNotFoundError("Backup file does not exist")
         
-        # Logika przywracania
         if server.connection_type == 'direct':
             result = _restore_direct(server, backup.file_path)
         elif server.connection_type == 'ssh':
             result = _restore_ssh_tunnel(server, backup.file_path)
         else:
-            raise ValueError(f"Nieobsługiwany typ połączenia: {server.connection_type}")
+            raise ValueError(f"Unsupported connection type: {server.connection_type}")
         
-        # Zaktualizuj historię
         history.completed_at = timezone.now()
         history.status = 'success' if result['success'] else 'error'
         
         if result['success']:
-            # Dodaj dodatkowy opis przy sukcesie
-            history.description += f" - zakończone powodzeniem"
+            history.description += f" - completed successfully"
         else:
-            # Zapisz komunikat błędu
             history.error_message = result['message']
         
         history.save()
@@ -177,24 +153,20 @@ def restore_backup_task(backup_id, history_id):
         except:
             pass
         
-        # Logowanie błędu
         import traceback
         print(f"RESTORE ERROR: {str(e)}")
         print(traceback.format_exc())
 
 def _restore_direct(server, backup_file):
-    """Przywraca backup przez bezpośrednie połączenie"""
     try:
-        # Sprawdź czy mysql jest zainstalowany
         try:
             subprocess.run(['which', 'mysql'], check=True, capture_output=True)
         except subprocess.CalledProcessError:
             return {
                 'success': False,
-                'message': 'Błąd: mysql nie jest zainstalowany. Zainstaluj klienta MySQL na serwerze.'
+                'message': 'Error: mysql is not installed. Install MySQL client on the server.'
             }
         
-        # Wykonaj przywracanie
         cmd = [
             'mysql',
             f'--host={server.hostname}',
@@ -203,11 +175,9 @@ def _restore_direct(server, backup_file):
             f'--password={server.password}',
         ]
         
-        # Dodaj nazwę bazy, jeśli określona
         if server.database_name:
             cmd.append(server.database_name)
         
-        # Odtwórz z pliku
         with open(backup_file, 'rb') as f:
             result = subprocess.run(
                 cmd,
@@ -219,61 +189,53 @@ def _restore_direct(server, backup_file):
         if result.returncode == 0:
             return {
                 'success': True,
-                'message': 'Backup przywrócony pomyślnie'
+                'message': 'Backup restored successfully'
             }
         else:
             return {
                 'success': False,
-                'message': f'Błąd podczas przywracania: {result.stderr}'
+                'message': f'Error during restore: {result.stderr}'
             }
     except Exception as e:
         return {
             'success': False,
-            'message': f'Błąd: {str(e)}'
+            'message': f'Error: {str(e)}'
         }
 
 def _restore_ssh_tunnel(server, backup_file):
-    """Przywraca backup przez tunel SSH"""
     try:
-        # Sprawdź dane SSH
         if not all([server.ssh_hostname, server.ssh_port, server.ssh_username]):
             return {
                 'success': False,
-                'message': 'Brakujące dane SSH: hostname, port lub username'
+                'message': 'Missing SSH data: hostname, port or username'
             }
         
-        # Sprawdź czy posiadamy hasło lub klucz SSH
         if not server.ssh_password and not server.ssh_key_file:
             return {
                 'success': False,
-                'message': 'Brak metody uwierzytelniania SSH (hasło lub klucz)'
+                'message': 'No SSH authentication method (password or key)'
             }
             
-        # Sprawdź czy mysql jest zainstalowany
         try:
             subprocess.run(['which', 'mysql'], check=True, capture_output=True)
         except subprocess.CalledProcessError:
             return {
                 'success': False,
-                'message': 'Błąd: mysql nie jest zainstalowany. Zainstaluj klienta MySQL na serwerze.'
+                'message': 'Error: mysql is not installed. Install MySQL client on the server.'
             }
         
-        # Tworzenie tunelu SSH
         ssh_config = {
             'ssh_address_or_host': (server.ssh_hostname, int(server.ssh_port)),
             'ssh_username': server.ssh_username,
             'remote_bind_address': (server.hostname, int(server.port))
         }
         
-        # Dodawanie metody uwierzytelniania
         if server.ssh_password:
             ssh_config['ssh_password'] = server.ssh_password
         elif server.ssh_key_file and server.ssh_key_file.path:
             ssh_config['ssh_pkey'] = server.ssh_key_file.path
             
-        # Utwórz tunel SSH
         with sshtunnel.SSHTunnelForwarder(**ssh_config) as tunnel:
-            # Wykonaj przywracanie przez tunel
             cmd = [
                 'mysql',
                 '--host=127.0.0.1',
@@ -282,11 +244,9 @@ def _restore_ssh_tunnel(server, backup_file):
                 f'--password={server.password}',
             ]
             
-            # Dodaj nazwę bazy, jeśli określona
             if server.database_name:
                 cmd.append(server.database_name)
             
-            # Odtwórz z pliku
             with open(backup_file, 'rb') as f:
                 result = subprocess.run(
                     cmd,
@@ -298,16 +258,16 @@ def _restore_ssh_tunnel(server, backup_file):
             if result.returncode == 0:
                 return {
                     'success': True,
-                    'message': 'Backup przywrócony pomyślnie przez tunel SSH'
+                    'message': 'Backup successfully restored through SSH tunnel'
                 }
             else:
                 return {
                     'success': False,
-                    'message': f'Błąd podczas przywracania: {result.stderr}'
+                    'message': f'Error during restore: {result.stderr}'
                 }
                 
     except Exception as e:
         return {
             'success': False,
-            'message': f'Błąd tunelu SSH: {str(e)}'
+            'message': f'SSH tunnel error: {str(e)}'
         }
