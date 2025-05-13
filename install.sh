@@ -1,10 +1,5 @@
 #!/bin/bash
-
-# DB Backup Tool Installation Script
-# Confidence level: 99%
-
 set -e
-
 # Configuration variables
 APP_PATH="/var/www/backup_app"
 APP_USER="$(whoami)"
