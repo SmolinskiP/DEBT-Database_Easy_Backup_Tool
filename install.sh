@@ -5,7 +5,7 @@ APP_PATH="/var/www/backup_app"
 APP_USER="$(whoami)"
 APP_GROUP="www-data"
 VENV_PATH="$APP_PATH/venv"
-REPO_URL="https://github.com/yourusername/db-backup-tool.git"
+REPO_URL="https://github.com/SmolinskiP/db_backup_tool.git"
 
 # Colors for output
 RED='\033[0;31m'
@@ -27,7 +27,7 @@ fi
 echo -e "\n${GREEN}Installing system dependencies...${NC}"
 apt-get update
 apt-get install -y python3 python3-venv python3-pip redis-server default-mysql-client \
-                   build-essential libssl-dev libffi-dev python3-dev
+                   build-essential libssl-dev libffi-dev python3-dev git
 
 # Create application directory
 echo -e "\n${GREEN}Creating application directories...${NC}"
