@@ -1,0 +1,266 @@
+<!-- home.html - Zmodyfikowana wersja -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - DB Backup Tool{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Dodaj nowy serwer bazy danych</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="server-form">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Nazwa serwera</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_connection_type" class="form-label">Typ połączenia</label>
+                        {{ form.connection_type }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_hostname" class="form-label">Host bazy danych</label>
+                        {{ form.hostname }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_port" class="form-label">Port bazy danych</label>
+                        {{ form.port }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Użytkownik bazy danych</label>
+                        {{ form.username }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Hasło bazy danych</label>
+                        {{ form.password }}
+                    </div>
+                    
+                    <!-- Sekcja SSH Tunnel -->
+                    <div id="ssh-fields-container" class="ssh-field-container">
+                        <h5 class="mt-4 mb-3">Konfiguracja tunelu SSH</h5>
+                        
+                        <div class="mb-3">
+                            <label for="id_ssh_hostname" class="form-label">Host SSH</label>
+                            {{ form.ssh_hostname }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_ssh_port" class="form-label">Port SSH</label>
+                            {{ form.ssh_port }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_ssh_username" class="form-label">Użytkownik SSH</label>
+                            {{ form.ssh_username }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_ssh_password" class="form-label">Hasło SSH</label>
+                            {{ form.ssh_password }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_ssh_key_file" class="form-label">Klucz SSH (opcjonalnie)</label>
+                            {{ form.ssh_key_file }}
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Dodaj serwer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <h3>Lista serwerów</h3>
+        {% if servers %}
+            {% for server in servers %}
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>{{ server.name }}</h5>
+                        <div>
+                            <span class="badge bg-primary">{{ server.get_connection_type_display }}</span>
+                            <button class="btn btn-sm btn-link toggle-details" data-server-id="{{ server.id }}">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body server-details" id="server-details-{{ server.id }}" style="display: none;">
+                        <p><strong>Host:</strong> {{ server.hostname }}:{{ server.port }}</p>
+                        <p><strong>Użytkownik:</strong> {{ server.username }}</p>
+                        {% if server.connection_type == 'ssh' %}
+                            <p><strong>SSH:</strong> {{ server.ssh_hostname }}:{{ server.ssh_port }}</p>
+                        {% endif %}
+                        <p><strong>Dodano:</strong> {{ server.created_at|date:"d.m.Y H:i" }}</p>
+                        <div class="d-flex justify-content-between mt-3">
+                            <button type="button" class="btn btn-outline-primary test-server-btn" data-server-id="{{ server.id }}">
+                                Testuj połączenie
+                            </button>
+                            <button type="button" class="btn btn-outline-danger delete-server-btn" data-server-id="{{ server.id }}">
+                                Usuń serwer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                Brak skonfigurowanych serwerów. Dodaj nowy serwer.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal potwierdzenia usunięcia -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Potwierdź usunięcie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Czy na pewno chcesz usunąć ten serwer? Tej operacji nie można cofnąć.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Usuń</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal wyniku testu połączenia -->
+<div class="modal fade" id="connectionTestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Wynik testu połączenia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="connectionTestResult" class="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Dodanie klas do wszystkich pól formularza
+        $('input[type="text"], input[type="password"], input[type="number"], select, textarea').addClass('form-control');
+        
+        // Funkcja do zarządzania widocznością pól SSH
+        function toggleSSHFields() {
+            if ($('select[name="connection_type"]').val() === 'ssh') {
+                $('#ssh-fields-container').addClass('visible');
+            } else {
+                $('#ssh-fields-container').removeClass('visible');
+            }
+        }
+        
+        // Wywołanie przy starcie i przy zmianie
+        toggleSSHFields();
+        $('select[name="connection_type"]').change(toggleSSHFields);
+        
+        // Obsługa rozwijania szczegółów serwera
+        $('.toggle-details').click(function() {
+            const serverId = $(this).data('server-id');
+            const detailsDiv = $('#server-details-' + serverId);
+            const icon = $(this).find('i');
+            
+            detailsDiv.slideToggle(200, function() {
+                if (detailsDiv.is(':visible')) {
+                    icon.removeClass('bi-chevron-down').addClass('bi-chevron-up');
+                } else {
+                    icon.removeClass('bi-chevron-up').addClass('bi-chevron-down');
+                }
+            });
+        });
+        
+        // Obsługa usuwania serwera
+        let serverToDelete = null;
+        
+        $('.delete-server-btn').click(function() {
+            serverToDelete = $(this).data('server-id');
+            $('#deleteModal').modal('show');
+        });
+        
+        $('#confirmDelete').click(function() {
+            if (serverToDelete) {
+                // Wysyłka żądania usunięcia
+                $.ajax({
+                    url: '/api/servers/' + serverToDelete + '/',
+                    type: 'DELETE',
+                    success: function(response) {
+                        $('#deleteModal').modal('hide');
+                        // Odświeżenie strony po usunięciu
+                        location.reload();
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Błąd podczas usuwania serwera: ' + error);
+                    }
+                });
+            }
+        });
+        
+    $('.test-server-btn').click(function() {
+        const serverId = $(this).data('server-id');
+        const button = $(this);
+        
+        // Zmiana stanu przycisku
+        button.prop('disabled', true);
+        button.text('Testowanie...');
+        
+        // Wysyłka danych do API
+        $.ajax({
+            url: '/api/test-connection/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ server_id: serverId }),
+            success: function(response) {
+                button.prop('disabled', false);
+                button.text('Testuj połączenie');
+                
+                // Wyświetl wynik w modalu zamiast alert()
+                if (response.success) {
+                    $('#connectionTestResult').removeClass('alert-danger').addClass('alert-success');
+                    button.removeClass('btn-outline-primary btn-outline-danger').addClass('btn-outline-success');
+                } else {
+                    $('#connectionTestResult').removeClass('alert-success').addClass('alert-danger');
+                    button.removeClass('btn-outline-primary btn-outline-success').addClass('btn-outline-danger');
+                }
+                
+                $('#connectionTestResult').text(response.message);
+                $('#connectionTestModal').modal('show');
+            },
+            error: function(xhr, status, error) {
+                button.prop('disabled', false);
+                button.text('Testuj połączenie');
+                button.removeClass('btn-outline-primary btn-outline-success').addClass('btn-outline-danger');
+                
+                // Wyświetl błąd w modalu
+                $('#connectionTestResult').removeClass('alert-success').addClass('alert-danger');
+                $('#connectionTestResult').text('Błąd podczas komunikacji z serwerem: ' + error);
+                $('#connectionTestModal').modal('show');
+            }
+        });
+    });
+    });
+</script>
+{% endblock %}

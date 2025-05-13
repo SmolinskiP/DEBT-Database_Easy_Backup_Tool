@@ -1,0 +1,216 @@
+<!-- templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DB Backup Tool{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --accent-primary: #7952b3;
+            --border-color: #333333;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .navbar-brand {
+            color: var(--accent-primary);
+            font-weight: bold;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+        }
+        
+        .card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .card-header {
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-control, .form-select {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .ssh-field-container {
+            display: none;
+        }
+        
+        .ssh-field-container.visible {
+            display: block;
+        }
+        
+        #connection-test-result {
+            display: none;
+            margin-top: 15px;
+        }
+            .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+    
+    .status-success {
+        background-color: #28a745;
+    }
+    
+    .status-danger {
+        background-color: #dc3545;
+    }
+    
+    .status-warning {
+        background-color: #ffc107;
+    }
+    
+    /* Poprawki dla czytelności tabel */
+    .table {
+        color: var(--text-primary);
+        border-color: var(--border-color);
+    }
+    
+    .table thead th {
+        font-weight: 600;
+        border-bottom-width: 1px;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    .table td {
+        vertical-align: middle;
+    }
+    
+    /* Poprawa czytelności tekstu */
+    .text-muted {
+        color: #adb5bd !important;
+    }
+    
+    .badge {
+        font-weight: 500;
+        padding: 0.35em 0.65em;
+    }
+        .navbar {
+        padding: 0.5rem 1rem;
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .nav-link {
+        color: var(--text-secondary);
+        padding: 0.75rem 1rem;
+        margin: 0 0.2rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .nav-link:hover {
+        color: var(--text-primary);
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .nav-link.active {
+        color: var(--text-primary);
+        background-color: var(--accent-primary);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        font-weight: 500;
+    }
+    
+    .nav-link i {
+        margin-right: 0.5rem;
+    }
+    
+    .navbar-brand {
+        color: var(--accent-primary);
+        font-weight: bold;
+        font-size: 1.25rem;
+        padding: 0.5rem 0;
+    }
+    
+    .navbar-brand i {
+        margin-right: 0.5rem;
+    }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Pasek nawigacyjny -->
+    <nav class="navbar navbar-expand-lg mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-database-fill"></i> DB Backup Tool
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/servers/' %}active{% endif %}" href="{% url 'server_list' %}">
+                            <i class="bi bi-hdd-network"></i> Serwery
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/servers/add/' %}active{% endif %}" href="{% url 'add_server' %}">
+                            <i class="bi bi-plus-circle"></i> Dodaj serwer
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="bi bi-calendar-check"></i> Zaplanowane zadania
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Główna zawartość -->
+    <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-4">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
