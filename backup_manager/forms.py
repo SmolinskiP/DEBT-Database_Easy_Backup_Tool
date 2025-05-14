@@ -76,7 +76,8 @@ class StorageConfigForm(forms.ModelForm):
         fields = [
             'name', 'storage_type', 'is_default',
             'hostname', 'port', 'username', 'password',
-            'path', 'key_file'
+            'path', 'key_file',
+            'gdrive_folder_id', 'gdrive_credentials_file'
         ]
         widgets = {
             'is_default': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
@@ -87,3 +88,10 @@ class StorageConfigForm(forms.ModelForm):
         for field_name, field in self.fields.items():
             if field_name != 'is_default':
                 field.widget.attrs.update({'class': 'form-control'})
+                
+        # Dodaj atrybuty dla pól Google Drive
+        if 'gdrive_folder_id' in self.fields:
+            self.fields['gdrive_folder_id'].widget.attrs.update({
+                'placeholder': 'np. 1A2B3C4D5E6F7G8H9I', 
+                'class': 'form-control'
+            })

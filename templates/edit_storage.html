@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Edit Storage - DEBT{% endblock %}
+{% block title %}Edit Storage - Database Easy Backup Tool{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -34,6 +34,7 @@
                         <label class="form-check-label" for="id_is_default">Set as Default Storage</label>
                     </div>
                     
+                    <!-- FTP/SFTP Fields -->
                     <div id="remote-storage-fields" style="display: none;">
                         <div class="mb-3">
                             <label for="id_hostname" class="form-label">Server Hostname</label>
@@ -74,6 +75,39 @@
                         </div>
                     </div>
                     
+                    <!-- Google Drive Fields -->
+                    <div id="gdrive-storage-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="id_gdrive_folder_id" class="form-label">Google Drive Folder ID</label>
+                            {{ form.gdrive_folder_id }}
+                            <small class="form-text text-muted">ID from the Google Drive folder URL (e.g., from https://drive.google.com/drive/folders/FOLDER_ID)</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_gdrive_credentials_file" class="form-label">Service Account Credentials (JSON file)</label>
+                            {{ form.gdrive_credentials_file }}
+                            <small class="form-text text-muted">Upload the JSON key file from Google Cloud Console</small>
+                            {% if storage.gdrive_credentials_file %}
+                                <div class="mt-2">
+                                    <span class="badge bg-info">Current file: {{ storage.gdrive_credentials_file.name }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> How to get Google Drive credentials:
+                            <ol class="mb-0 mt-2">
+                                <li>Go to <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                                <li>Create a project (or select an existing one)</li>
+                                <li>Enable the Google Drive API</li>
+                                <li>Create a service account</li>
+                                <li>Create a key for the service account (JSON format)</li>
+                                <li>Upload the downloaded JSON file above</li>
+                                <li>Share your Google Drive folder with the service account email address (found in the JSON file)</li>
+                            </ol>
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'storage_list' %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -91,23 +125,79 @@
         // Fix classes for checkbox
         $('#id_is_default').removeClass('form-control').addClass('form-check-input');
         
-        // Function to toggle remote storage fields
+        // Function to toggle storage fields based on type
         function toggleStorageFields() {
             const storageType = $('#id_storage_type').val();
             
-            if (storageType === 'local') {
-                $('#remote-storage-fields').hide();
-            } else {
+            // Hide all storage-specific fields first
+            $('#remote-storage-fields').hide();
+            $('#gdrive-storage-fields').hide();
+            $('.sftp-only').hide();
+            
+            // Show relevant fields based on storage type
+            if (storageType === 'ftp' || storageType === 'sftp') {
                 $('#remote-storage-fields').show();
                 
-                // Handle SFTP-specific fields
                 if (storageType === 'sftp') {
                     $('.sftp-only').show();
-                } else {
-                    $('.sftp-only').hide();
                 }
+                
+                // Reset required attributes for Google Drive fields
+                $('#id_gdrive_folder_id').prop('required', false);
+                $('#id_gdrive_credentials_file').prop('required', false);
+                
+                // Set required attributes for FTP/SFTP fields
+                $('#id_hostname').prop('required', true);
+                $('#id_username').prop('required', true);
+                
+            } else if (storageType === 'gdrive') {
+                $('#gdrive-storage-fields').show();
+                
+                // Set required attributes for Google Drive fields
+                $('#id_gdrive_folder_id').prop('required', true);
+                $('#id_gdrive_credentials_file').prop('required', true);
+                
+                // Reset required attributes for FTP/SFTP fields
+                $('#id_hostname').prop('required', false);
+                $('#id_username').prop('required', false);
+                $('#id_password').prop('required', false);
+                
+            } else {
+                // Local storage - reset all required attributes
+                $('#id_hostname').prop('required', false);
+                $('#id_username').prop('required', false);
+                $('#id_password').prop('required', false);
+                $('#id_gdrive_folder_id').prop('required', false);
+                $('#id_gdrive_credentials_file').prop('required', false);
             }
         }
+        
+        // Form validation before submit
+        $('form').submit(function(event) {
+            const storageType = $('#id_storage_type').val();
+            
+            if (storageType === 'gdrive') {
+                const folderId = $('#id_gdrive_folder_id').val();
+                const credentialsFile = $('#id_gdrive_credentials_file').val();
+                const existingCredentialsFile = $('.badge:contains("Current file")').length > 0;
+                
+                if (!folderId) {
+                    alert('Google Drive Folder ID is required.');
+                    $('#id_gdrive_folder_id').focus();
+                    event.preventDefault();
+                    return false;
+                }
+                
+                if (!credentialsFile && !existingCredentialsFile) {
+                    alert('Google Drive Credentials file is required.');
+                    $('#id_gdrive_credentials_file').focus();
+                    event.preventDefault();
+                    return false;
+                }
+            }
+            
+            return true;
+        });
         
         // Call on page load
         toggleStorageFields();

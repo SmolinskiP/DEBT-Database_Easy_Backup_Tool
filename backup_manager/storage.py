@@ -58,6 +58,8 @@ class StorageService:
             return StorageService._store_ftp(backup_file_path, task)
         elif task.storage_type == 'sftp':
             return StorageService._store_sftp(backup_file_path, task)
+        elif task.storage_type == 'gdrive':
+            return StorageService._store_gdrive(backup_file_path, task)
         else:
             error_msg = f'Unsupported storage type: {task.storage_type}'
             direct_log(f"ERROR: {error_msg}")
@@ -362,7 +364,90 @@ class StorageService:
                 'success': False,
                 'message': error_message
             }
+
+    @staticmethod
+    def _store_gdrive(backup_file_path, task):
+        """Upload file to Google Drive"""
+        try:
+            direct_log(f"Starting Google Drive upload for file: {backup_file_path}")
             
+            if not task.storage_config or not task.storage_config.gdrive_credentials_file:
+                error_msg = "Missing Google Drive credentials file"
+                direct_log(f"ERROR: {error_msg}")
+                return {
+                    'success': False,
+                    'message': error_msg
+                }
+                
+            filename = os.path.basename(backup_file_path)
+            
+            # Initialize Google Drive API client
+            from googleapiclient.discovery import build
+            from googleapiclient.http import MediaFileUpload
+            from google.oauth2 import service_account
+            
+            creds_path = task.storage_config.gdrive_credentials_file.path
+            direct_log(f"Using credentials file: {creds_path}")
+            
+            try:
+                credentials = service_account.Credentials.from_service_account_file(
+                    creds_path, scopes=['https://www.googleapis.com/auth/drive']
+                )
+                drive_service = build('drive', 'v3', credentials=credentials)
+                direct_log("Google Drive API client initialized")
+            except Exception as e:
+                error_msg = f"Failed to initialize Google Drive client: {str(e)}"
+                direct_log(f"ERROR: {error_msg}")
+                return {
+                    'success': False,
+                    'message': error_msg
+                }
+                
+            # Prepare file metadata and media
+            file_metadata = {
+                'name': filename,
+                'mimeType': 'application/octet-stream'
+            }
+            
+            # Add to folder if folder ID provided
+            if task.storage_config.gdrive_folder_id:
+                direct_log(f"Using folder ID: {task.storage_config.gdrive_folder_id}")
+                file_metadata['parents'] = [task.storage_config.gdrive_folder_id]
+                
+            media = MediaFileUpload(
+                backup_file_path,
+                mimetype='application/octet-stream',
+                resumable=True
+            )
+            
+            # Upload file
+            direct_log("Starting file upload to Google Drive")
+            file = drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id,name,webViewLink'
+            ).execute()
+            
+            direct_log(f"File uploaded successfully, ID: {file.get('id')}")
+            
+            return {
+                'success': True,
+                'message': f'File uploaded to Google Drive with ID: {file.get("id")}',
+                'path': backup_file_path,
+                'storage_path': f"GDrive: {file.get('name')} ({file.get('webViewLink')})"
+            }
+                
+        except Exception as e:
+            import traceback
+            error_message = f'Google Drive error: {str(e)}'
+            stack_trace = traceback.format_exc()
+            direct_log(f"ERROR: {error_message}")
+            direct_log(f"TRACEBACK: {stack_trace}")
+            return {
+                'success': False,
+                'message': error_message
+            }
+
     @staticmethod
     def get_storage_info(task):
         """Get human-readable storage information for a task"""
@@ -374,6 +459,9 @@ class StorageService:
                 return f"FTP: {config.hostname}" + (f"/{config.path}" if config.path else "")
             elif config.storage_type == 'sftp':
                 return f"SFTP: {config.hostname}" + (f"/{config.path}" if config.path else "")
+            elif config.storage_type == 'gdrive':  # Dodaj tę obsługę
+                folder_id = config.gdrive_folder_id if config.gdrive_folder_id else "root"
+                return f"Google Drive: {folder_id}"
         else:
             if task.storage_type == 'local':
                 return "Local storage"
@@ -381,5 +469,8 @@ class StorageService:
                 return f"FTP: {task.remote_hostname}" + (f"/{task.remote_path}" if task.remote_path else "")
             elif task.storage_type == 'sftp':
                 return f"SFTP: {task.remote_hostname}" + (f"/{task.remote_path}" if task.remote_path else "")
-                
+            elif task.storage_type == 'gdrive':  # Dodaj tę obsługę
+                folder_id = task.gdrive_folder_id if hasattr(task, 'gdrive_folder_id') and task.gdrive_folder_id else "root"
+                return f"Google Drive: {folder_id}"
+                    
         return "Unknown storage"

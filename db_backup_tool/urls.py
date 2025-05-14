@@ -59,4 +59,6 @@ urlpatterns = [
     path('storage/add/', login_required(add_storage_view), name='add_storage'),
     path('storage/edit/<int:storage_id>/', login_required(edit_storage_view), name='edit_storage'),
     path('api/storage/<int:storage_id>/', login_required(delete_storage_view), name='delete_storage'),
+
+    
 ]

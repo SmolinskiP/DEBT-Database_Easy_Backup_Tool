@@ -57,6 +57,7 @@ class BackupTask(models.Model):
         ('local', 'Local Storage'),
         ('ftp', 'FTP Server'),
         ('sftp', 'SFTP Server'),
+        ('gdrive', 'Google Drive'),
     )
     
     name = models.CharField(max_length=100)
@@ -65,10 +66,8 @@ class BackupTask(models.Model):
     time = models.TimeField(help_text="Execution time (HH:MM)")
     
     day_of_week = models.IntegerField(choices=DAY_OF_WEEK_CHOICES, null=True, blank=True)
-    
     day_of_month = models.IntegerField(null=True, blank=True, 
                                      help_text="Day of month (1-31)")
-    
     enabled = models.BooleanField(default=True)
     last_run = models.DateTimeField(null=True, blank=True)
     next_run = models.DateTimeField(null=True, blank=True)
@@ -82,14 +81,19 @@ class BackupTask(models.Model):
 
     storage_config = models.ForeignKey('StorageConfig', on_delete=models.SET_NULL, null=True, blank=True)
     storage_type = models.CharField(max_length=10, choices=STORAGE_CHOICES, default='local')
-    # Dane FTP/SFTP
+
     remote_hostname = models.CharField(max_length=255, blank=True, null=True)
     remote_port = models.IntegerField(blank=True, null=True)
     remote_username = models.CharField(max_length=100, blank=True, null=True)
     remote_password = models.CharField(max_length=255, blank=True, null=True)
     remote_path = models.CharField(max_length=255, blank=True, null=True, 
                                    help_text="Path on remote server where backups will be stored")
-    remote_key_file = models.FileField(upload_to='remote_keys/', blank=True, null=True)    
+    remote_key_file = models.FileField(upload_to='remote_keys/', blank=True, null=True)
+
+    gdrive_folder_id = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text="Google Drive folder ID (optional)")
+    gdrive_credentials_file = models.FileField(upload_to='gdrive_creds/', blank=True, null=True,
+                                         help_text="JSON credentials file")
 
     def __str__(self):
         return f"{self.name} ({self.get_frequency_display()} - {self.server.name})"
@@ -192,6 +196,7 @@ class StorageConfig(models.Model):
         ('local', 'Local Storage'),
         ('ftp', 'FTP Server'),
         ('sftp', 'SFTP Server'),
+        ('gdrive', 'Google Drive'),
     )
     
     name = models.CharField(max_length=100)
@@ -209,6 +214,12 @@ class StorageConfig(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    gdrive_folder_id = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text="Google Drive folder ID (optional)")
+    gdrive_credentials_file = models.FileField(upload_to='gdrive_creds/', blank=True, null=True,
+                                         help_text="JSON credentials file")
+
     
     def __str__(self):
         return f"{self.name} ({self.get_storage_type_display()})"

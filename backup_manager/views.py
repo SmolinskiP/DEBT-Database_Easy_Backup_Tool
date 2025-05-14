@@ -13,6 +13,8 @@ from .tasks import execute_backup_task, restore_backup_task
 import json
 import csv
 from datetime import datetime
+from google_auth_oauthlib.flow import Flow
+from google.oauth2.credentials import Credentials
 import os
 
 def dashboard_view(request):
@@ -561,3 +563,38 @@ def save_settings_view(request):
         return redirect('settings')
         
     return redirect('settings')
+
+def gdrive_auth_start(request):
+    """Placeholder for Google Drive auth start"""
+    messages.info(request, "Using service account authentication. No user auth needed.")
+    return redirect('storage_list')
+
+def gdrive_auth_callback(request):
+    """Placeholder for Google Drive auth callback"""
+    return redirect('storage_list')
+    """Handle Google Drive OAuth callback"""
+    state = request.session.get('gdrive_auth_state')
+    
+    if not state:
+        messages.error(request, "Authentication state mismatch. Please try again.")
+        return redirect('storage_list')
+    
+    flow = Flow.from_client_secrets_file(
+        'client_secret.json',
+        scopes=['https://www.googleapis.com/auth/drive.file'],
+        state=state,
+        redirect_uri=request.build_absolute_uri(reverse('gdrive_auth_callback'))
+    )
+    
+    flow.fetch_token(authorization_response=request.build_absolute_uri())
+    credentials = flow.credentials
+    
+    # Save credentials to file
+    credentials_path = os.path.join(settings.MEDIA_ROOT, 'gdrive_creds', f"user_{request.user.id}.json")
+    os.makedirs(os.path.dirname(credentials_path), exist_ok=True)
+    
+    with open(credentials_path, 'w') as f:
+        f.write(credentials.to_json())
+    
+    messages.success(request, "Google Drive authentication successful. You can now use Google Drive for backups.")
+    return redirect('storage_list')

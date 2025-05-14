@@ -104,13 +104,17 @@ def execute_backup_task(self, task_id):
             file_log("Syncing storage_config values to task fields")
             # This is critical - make sure remote settings are properly set from storage_config
             task.storage_type = task.storage_config.storage_type
-            task.remote_hostname = task.storage_config.hostname
-            task.remote_port = task.storage_config.port
-            task.remote_username = task.storage_config.username
-            # Only set password if it's not already set in task
-            if task.storage_config.password and not task.remote_password:
-                task.remote_password = task.storage_config.password
-            task.remote_path = task.storage_config.path or task.remote_path
+            if task.storage_type in ['ftp', 'sftp']:
+                task.remote_hostname = task.storage_config.hostname
+                task.remote_port = task.storage_config.port
+                task.remote_username = task.storage_config.username
+                # Only set password if it's not already set in task
+                if task.storage_config.password and not task.remote_password:
+                    task.remote_password = task.storage_config.password
+                task.remote_path = task.storage_config.path or task.remote_path
+            if task.storage_type == 'gdrive':
+                if hasattr(task, 'gdrive_folder_id'):
+                    task.gdrive_folder_id = task.storage_config.gdrive_folder_id
             task.save()
             
             # Log the values after syncing

@@ -49,3 +49,7 @@ backups/
 # Pozostałe
 .DS_Store
 celerybeat-schedule.db
+
+# Google Drive credentials
+gdrive_creds/
+gdrive_creds/*
