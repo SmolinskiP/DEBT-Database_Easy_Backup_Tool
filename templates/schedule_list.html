@@ -22,6 +22,7 @@
                             <th>Name</th>
                             <th>Server</th>
                             <th>Frequency</th>
+                            <th>Storage Location</th>
                             <th>Next Execution</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -40,6 +41,23 @@
                                         ({{ task.day_of_month }} day)
                                     {% endif %}
                                     at {{ task.time|time:"H:i" }}
+                                </td>
+                                <td>
+                                    {% if task.storage_type == 'local' %}
+                                        <span class="badge bg-secondary">Local Storage</span>
+                                    {% elif task.storage_type == 'ftp' %}
+                                        <span class="badge bg-primary">FTP: {{ task.remote_hostname }}</span>
+                                    {% elif task.storage_type == 'sftp' %}
+                                        <span class="badge bg-info">SFTP: {{ task.remote_hostname }}</span>
+                                    {% elif task.storage_type == 'gdrive' %}
+                                        <span class="badge bg-success">Google Drive</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Unknown</span>
+                                    {% endif %}
+                                    
+                                    {% if task.storage_config %}
+                                        <small class="d-block text-muted">{{ task.storage_config.name }}</small>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if task.next_run %}

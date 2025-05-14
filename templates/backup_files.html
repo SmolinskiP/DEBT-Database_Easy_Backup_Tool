@@ -18,6 +18,7 @@
                         <tr>
                             <th>Filename</th>
                             <th>Server</th>
+                            <th>Storage</th>
                             <th>Creation Date</th>
                             <th>Size</th>
                             <th>Actions</th>
@@ -29,6 +30,24 @@
                                 <tr>
                                     <td>{{ backup.get_filename }}</td>
                                     <td>{{ backup.server.name }}</td>
+                                    <td>
+                                        {% if backup.task %}
+                                            {% if backup.task.storage_type == 'local' %}
+                                                <span class="badge bg-secondary">Local Storage</span>
+                                            {% elif backup.task.storage_type == 'ftp' %}
+                                                <span class="badge bg-primary">FTP</span>
+                                            {% elif backup.task.storage_type == 'sftp' %}
+                                                <span class="badge bg-info">SFTP</span>
+                                            {% elif backup.task.storage_type == 'gdrive' %}
+                                                <span class="badge bg-success">Google Drive</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Unknown</span>
+                                            {% endif %}
+
+                                        {% else %}
+                                            <span class="badge bg-secondary">Local Storage</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ backup.started_at|date:"d.m.Y H:i:s" }}</td>
                                     <td>
                                         {% if backup.file_size %}

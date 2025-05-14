@@ -11,8 +11,7 @@ from backup_manager.views import (
     delete_schedule_view, toggle_schedule_view, run_backup_now_view,
     backup_history_view, export_history_csv_view,
     backup_files_view, download_backup_view, restore_backup_view,
-    delete_backup_view, delete_history_view, settings_view,
-    save_settings_view, add_storage_view, edit_storage_view,
+    delete_backup_view, delete_history_view, add_storage_view, edit_storage_view,
     delete_storage_view, storage_list_view
 )
 
@@ -30,8 +29,6 @@ urlpatterns = [
     # Serwery baz danych
     path('servers/add/', login_required(add_server_view), name='add_server'),
     path('servers/', login_required(server_list_view), name='server_list'),
-    path('settings/', login_required(settings_view), name='settings'),
-    path('settings/save/', login_required(save_settings_view), name='save_settings'),
     path('api/test-connection/', login_required(test_connection_view), name='test_connection'),
     path('api/servers/<int:server_id>/', login_required(delete_server_view), name='delete_server'),
     

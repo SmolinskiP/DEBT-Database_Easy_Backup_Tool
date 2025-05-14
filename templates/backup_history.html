@@ -23,6 +23,7 @@
                         <tr>
                             <th>Server</th>
                             <th>Source</th>
+                            <th>Storage</th>
                             <th>Start</th>
                             <th>Completion</th>
                             <th>Status</th>
@@ -36,9 +37,27 @@
             <td>{{ entry.server.name }}</td>
             <td>
                 {% if entry.task %}
-                    <span class="badge bg-info">{{ entry.task.name }}</span>
+                    {{ entry.task.name }}
                 {% else %}
-                    <span class="badge bg-secondary">Manual</span>
+                    Manual
+                {% endif %}
+            </td>
+            <td>
+                {% if entry.task %}
+                    {% if entry.task.storage_type == 'local' %}
+                        <span class="badge bg-secondary">Local Storage</span>
+                    {% elif entry.task.storage_type == 'ftp' %}
+                        <span class="badge bg-primary">FTP</span>
+                    {% elif entry.task.storage_type == 'sftp' %}
+                        <span class="badge bg-info">SFTP</span>
+                    {% elif entry.task.storage_type == 'gdrive' %}
+                        <span class="badge bg-success">Google Drive</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Unknown</span>
+                    {% endif %}
+
+                {% else %}
+                    <span class="badge bg-secondary">Local Storage</span>
                 {% endif %}
             </td>
             <td>{{ entry.started_at|date:"d.m.Y H:i:s" }}</td>
@@ -74,7 +93,8 @@
                         data-path="{{ entry.file_path }}"
                         data-size="{% if entry.file_size %}{{ entry.file_size|filesizeformat }}{% else %}-{% endif %}"
                         data-error="{{ entry.error_message }}"
-                        data-description="{{ entry.description }}">
+                        data-description="{{ entry.description }}"
+                        data-storage="{% if entry.task %}{{ entry.task.get_storage_type_display }}{% else %}Local Storage{% endif %}">
                     <i class="bi bi-info-circle"></i>
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-danger delete-history-btn" 
@@ -115,6 +135,10 @@
                 <div class="row mb-2">
                     <div class="col-md-4"><strong>Server:</strong></div>
                     <div class="col-md-8" id="detail-server"></div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Storage:</strong></div>
+                    <div class="col-md-8" id="detail-storage"></div>
                 </div>
                 <div class="row mb-2">
                     <div class="col-md-4"><strong>Start:</strong></div>
@@ -207,9 +231,11 @@
             const size = $(this).data('size');
             const error = $(this).data('error');
             const description = $(this).data('description');
+            const storage = $(this).data('storage');
             
             // Fill modal with data
             $('#detail-server').text(server);
+            $('#detail-storage').text(storage || 'Local Storage');
             $('#detail-started').text(started);
             $('#detail-completed').text(completed);
             $('#detail-status').text(status);

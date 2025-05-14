@@ -453,15 +453,6 @@ def delete_history_view(request, history_id):
             'message': f'Error: {str(e)}'
         }, status=500)
 
-def settings_view(request):
-    """Settings view"""
-    # We'll use this to store and display application settings
-    context = {
-        'title': 'Settings',
-    }
-    return render(request, 'settings.html', context)
-
-# Dodaj do backup_manager/views.py
 
 def storage_list_view(request):
     """Storage configurations list"""
@@ -550,19 +541,6 @@ def delete_storage_view(request, storage_id):
         'success': False,
         'message': 'Invalid HTTP method.'
     }, status=405)
-
-def save_settings_view(request):
-    """Save application settings"""
-    if request.method == 'POST':
-        # Save each setting to database
-        AppSettings.set('default_retention', request.POST.get('default_retention', '10'))
-        AppSettings.set('email_from', request.POST.get('email_from', ''))
-        AppSettings.set('enable_logging', 'yes' if request.POST.get('enable_logging') else 'no')
-        
-        messages.success(request, "Settings have been saved.")
-        return redirect('settings')
-        
-    return redirect('settings')
 
 def gdrive_auth_start(request):
     """Placeholder for Google Drive auth start"""

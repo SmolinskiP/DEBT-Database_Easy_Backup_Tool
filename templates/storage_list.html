@@ -31,15 +31,17 @@
                             <tr>
                                 <td>{{ storage.name }}</td>
                                 <td>
-                                    <span class="badge {% if storage.storage_type == 'local' %}bg-secondary{% elif storage.storage_type == 'ftp' %}bg-primary{% else %}bg-info{% endif %}">
+                                    <span class="badge {% if storage.storage_type == 'local' %}bg-secondary{% elif storage.storage_type == 'ftp' %}bg-primary{% elif storage.storage_type == 'sftp' %}bg-info{% elif storage.storage_type == 'gdrive' %}bg-success{% endif %}">
                                         {{ storage.get_storage_type_display }}
                                     </span>
                                 </td>
                                 <td>
-                                    {% if storage.storage_type != 'local' %}
-                                        {{ storage.hostname }}{% if storage.port %}:{{ storage.port }}{% endif %}
-                                    {% else %}
+                                    {% if storage.storage_type == 'local' %}
                                         Local filesystem
+                                    {% elif storage.storage_type == 'ftp' or storage.storage_type == 'sftp' %}
+                                        {{ storage.hostname }}{% if storage.port %}:{{ storage.port }}{% endif %}
+                                    {% elif storage.storage_type == 'gdrive' %}
+                                        Google Drive
                                     {% endif %}
                                 </td>
                                 <td>
