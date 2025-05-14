@@ -2,6 +2,8 @@
 
 A web-based backup tool for MySQL/MariaDB databases. Supports both direct TCP/IP connections and SSH tunneling.
 
+![DEBT](https://github.com/user-attachments/assets/5e6b0f0b-31b9-46c5-8277-16c564f619f9)
+
 ## Features
 
 - Database server management
