@@ -47,3 +47,4 @@ backups/
 
 # Pozostałe
 .DS_Store
+celerybeat-schedule.db
