@@ -26,7 +26,7 @@
                     </thead>
                     <tbody>
                         {% for backup in history %}
-                            {% if backup.file_path %}
+                            {% if backup.file_path %}dd
                                 <tr>
                                     <td>{{ backup.get_filename }}</td>
                                     <td>{{ backup.server.name }}</td>
