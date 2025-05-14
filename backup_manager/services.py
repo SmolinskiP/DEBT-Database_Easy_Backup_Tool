@@ -9,6 +9,25 @@ from django.conf import settings
 from .models import DatabaseServer
 import socket
 
+def direct_log(message):
+    """Log message to a file in logs directory"""
+    try:
+        log_dir = os.path.join(settings.BASE_DIR, 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'debug.log')
+
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(log_file, 'a') as f:
+            f.write(f"[{timestamp}] {message}\n")
+    except Exception as e:
+        try:
+            error_file = "/tmp/debt_backup_error.log"
+            with open(error_file, 'a') as f:
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.write(f"[{timestamp}] ERROR LOGGING: {str(e)}, Original message: {message}\n")
+        except:
+            pass
+
 class BackupService:
     """Service for performing database backups"""
     
@@ -17,16 +36,17 @@ class BackupService:
         self.timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         self.backup_dir = settings.BACKUP_DIR
         
-    def execute_backup(self):
+    def execute_backup(self, task=None):
         """Executes backup depending on connection type"""
+        direct_log(f"SERVICES: Shedule name - {task}")
         if self.server.connection_type == 'direct':
-            return self._direct_backup()
+            return self._direct_backup(task)
         elif self.server.connection_type == 'ssh':
-            return self._ssh_tunnel_backup()
+            return self._ssh_tunnel_backup(task)
         else:
             raise ValueError(f"Unsupported connection type: {self.server.connection_type}")
     
-    def _direct_backup(self):
+    def _direct_backup(self, task=None):
         """Performs direct database backup through TCP/IP"""
         try:
             # Test connection to database
@@ -44,8 +64,9 @@ class BackupService:
             conn = mysql.connector.connect(**conn_params)
             conn.close()
             
-            # Backup filename
-            backup_filename = f"{self.server.name}_{self.timestamp}.sql"
+            # Backup filename with new format: DATETIME_SERVERNAME_SCHEDULENAME.sql
+            schedule_name = f"_{task.name}" if task else ""
+            backup_filename = f"{self.timestamp}_{self.server.name}{schedule_name}.sql"
             backup_path = os.path.join(self.backup_dir, backup_filename)
             
             # Execute mysqldump
@@ -86,7 +107,7 @@ class BackupService:
                 'message': f'Connection error: {str(e)}'
             }
     
-    def _ssh_tunnel_backup(self):
+    def _ssh_tunnel_backup(self, task=None):
         """Performs backup through SSH tunnel"""
         try:
             # Check SSH data
@@ -103,8 +124,9 @@ class BackupService:
                     'message': 'No SSH authentication method (password or key)'
                 }
             
-            # Backup filename
-            backup_filename = f"{self.server.name}_{self.timestamp}.sql"
+            # Backup filename with new format: DATETIME_SERVERNAME_SCHEDULENAME.sql
+            schedule_name = f"_{task.name}" if task else ""
+            backup_filename = f"{self.timestamp}_{self.server.name}{schedule_name}.sql"
             backup_path = os.path.join(self.backup_dir, backup_filename)
             
             # Creating SSH tunnel

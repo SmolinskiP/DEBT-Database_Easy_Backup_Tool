@@ -11,7 +11,9 @@ from backup_manager.views import (
     delete_schedule_view, toggle_schedule_view, run_backup_now_view,
     backup_history_view, export_history_csv_view,
     backup_files_view, download_backup_view, restore_backup_view,
-    delete_backup_view, delete_history_view
+    delete_backup_view, delete_history_view, settings_view,
+    save_settings_view, add_storage_view, edit_storage_view,
+    delete_storage_view, storage_list_view
 )
 
 urlpatterns = [
@@ -28,6 +30,8 @@ urlpatterns = [
     # Serwery baz danych
     path('servers/add/', login_required(add_server_view), name='add_server'),
     path('servers/', login_required(server_list_view), name='server_list'),
+    path('settings/', login_required(settings_view), name='settings'),
+    path('settings/save/', login_required(save_settings_view), name='save_settings'),
     path('api/test-connection/', login_required(test_connection_view), name='test_connection'),
     path('api/servers/<int:server_id>/', login_required(delete_server_view), name='delete_server'),
     
@@ -49,4 +53,10 @@ urlpatterns = [
     path('api/backups/restore/<int:backup_id>/', login_required(restore_backup_view), name='restore_backup'),
     path('api/backups/delete/<int:backup_id>/', login_required(delete_backup_view), name='delete_backup'),
     path('api/history/delete/<int:history_id>/', login_required(delete_history_view), name='delete_history'),
+
+    # Storage configurations
+    path('storage/', login_required(storage_list_view), name='storage_list'),
+    path('storage/add/', login_required(add_storage_view), name='add_storage'),
+    path('storage/edit/<int:storage_id>/', login_required(edit_storage_view), name='edit_storage'),
+    path('api/storage/<int:storage_id>/', login_required(delete_storage_view), name='delete_storage'),
 ]

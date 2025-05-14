@@ -6,8 +6,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.urls import reverse
 from django.conf import settings
-from .models import DatabaseServer, BackupTask, BackupHistory
-from .forms import DatabaseServerForm, BackupTaskForm
+from .models import DatabaseServer, BackupTask, BackupHistory, StorageConfig, AppSettings
+from .forms import DatabaseServerForm, BackupTaskForm, StorageConfigForm
 from .services import DatabaseConnectionService, BackupService
 from .tasks import execute_backup_task, restore_backup_task
 import json
@@ -450,3 +450,114 @@ def delete_history_view(request, history_id):
             'success': False, 
             'message': f'Error: {str(e)}'
         }, status=500)
+
+def settings_view(request):
+    """Settings view"""
+    # We'll use this to store and display application settings
+    context = {
+        'title': 'Settings',
+    }
+    return render(request, 'settings.html', context)
+
+# Dodaj do backup_manager/views.py
+
+def storage_list_view(request):
+    """Storage configurations list"""
+    storage_configs = StorageConfig.objects.all().order_by('-is_default', 'name')
+    
+    context = {
+        'storage_configs': storage_configs,
+    }
+    return render(request, 'storage_list.html', context)
+
+def add_storage_view(request):
+    """Add new storage configuration"""
+    form = StorageConfigForm()
+    
+    if request.method == 'POST':
+        form = StorageConfigForm(request.POST, request.FILES)
+        if form.is_valid():
+            storage = form.save()
+            messages.success(request, f"Storage configuration '{storage.name}' has been added.")
+            return redirect('storage_list')
+        else:
+            messages.error(request, "Please correct the form errors.")
+    
+    context = {
+        'form': form,
+    }
+    return render(request, 'add_storage.html', context)
+
+def edit_storage_view(request, storage_id):
+    """Edit storage configuration"""
+    storage = get_object_or_404(StorageConfig, id=storage_id)
+    form = StorageConfigForm(instance=storage)
+    
+    if request.method == 'POST':
+        form = StorageConfigForm(request.POST, request.FILES, instance=storage)
+        if form.is_valid():
+            storage = form.save()
+            messages.success(request, f"Storage configuration '{storage.name}' has been updated.")
+            return redirect('storage_list')
+        else:
+            messages.error(request, "Please correct the form errors.")
+    
+    context = {
+        'form': form,
+        'storage': storage,
+    }
+    return render(request, 'edit_storage.html', context)
+
+@csrf_exempt
+def delete_storage_view(request, storage_id):
+    """API endpoint for deleting a storage configuration"""
+    if request.method == 'DELETE':
+        try:
+            storage = StorageConfig.objects.get(id=storage_id)
+            name = storage.name
+            
+            # Check if it's being used by any backup tasks
+            tasks_using = BackupTask.objects.filter(
+                models.Q(remote_hostname=storage.hostname) & 
+                models.Q(remote_username=storage.username)
+            ).count()
+            
+            if tasks_using > 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': f"Cannot delete '{name}' - it's being used by {tasks_using} backup tasks."
+                }, status=400)
+                
+            storage.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f"Storage configuration '{name}' has been deleted."
+            })
+        except StorageConfig.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Storage configuration does not exist.'
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({
+        'success': False,
+        'message': 'Invalid HTTP method.'
+    }, status=405)
+
+def save_settings_view(request):
+    """Save application settings"""
+    if request.method == 'POST':
+        # Save each setting to database
+        AppSettings.set('default_retention', request.POST.get('default_retention', '10'))
+        AppSettings.set('email_from', request.POST.get('email_from', ''))
+        AppSettings.set('enable_logging', 'yes' if request.POST.get('enable_logging') else 'no')
+        
+        messages.success(request, "Settings have been saved.")
+        return redirect('settings')
+        
+    return redirect('settings')

@@ -1,5 +1,5 @@
 from django import forms
-from .models import BackupTask, DatabaseServer
+from .models import BackupTask, DatabaseServer, StorageConfig, AppSettings
 import datetime
 
 class DatabaseServerForm(forms.ModelForm):
@@ -30,14 +30,25 @@ class BackupTaskForm(forms.ModelForm):
         self.fields['server'].queryset = DatabaseServer.objects.all().order_by('name')
         self.fields['server'].empty_label = "-- Select server --"
         
+        # Dodaj pole dla storage_config
+        self.fields['storage_config'].queryset = StorageConfig.objects.all().order_by('-is_default', 'name')
+        self.fields['storage_config'].empty_label = "-- Custom storage --"
+        
+        # Ustaw domyślną wartość dla storage_config
+        if not self.instance.pk:  # Tylko dla nowych rekordów
+            try:
+                self.fields['storage_config'].initial = StorageConfig.objects.filter(is_default=True).first().id
+            except:
+                pass
+        
         # Inicjalizacja pól
         self.fields['time'].initial = datetime.time(1, 0)  # 01:00 AM
-        self.fields['retain_count'].initial = 10
-        self.fields['storage_type'].initial = 'local'
+        self.fields['retain_count'].initial = int(AppSettings.get('default_retention', 10))
         
         # Dodaj klasy CSS
         for field_name, field in self.fields.items():
-            field.widget.attrs.update({'class': 'form-control'})
+            if field_name not in ['enabled', 'email_notification']:
+                field.widget.attrs.update({'class': 'form-control'})
     
     class Meta:
         model = BackupTask
@@ -45,9 +56,9 @@ class BackupTaskForm(forms.ModelForm):
             'name', 'server', 'frequency', 'time', 'day_of_week', 
             'day_of_month', 'enabled', 'retain_count',
             'email_notification', 'email_address',
-            'storage_type', 'remote_hostname', 'remote_port',
-            'remote_username', 'remote_password', 'remote_path',
-            'remote_key_file'
+            'storage_config', 'storage_type', 'remote_hostname', 
+            'remote_port', 'remote_username', 'remote_password', 
+            'remote_path', 'remote_key_file'
         ]
         widgets = {
             'time': forms.TimeInput(attrs={'type': 'time'}),
@@ -56,3 +67,23 @@ class BackupTaskForm(forms.ModelForm):
             'email_notification': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'remote_password': forms.PasswordInput(),
         }
+
+class StorageConfigForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput, required=False)
+    
+    class Meta:
+        model = StorageConfig
+        fields = [
+            'name', 'storage_type', 'is_default',
+            'hostname', 'port', 'username', 'password',
+            'path', 'key_file'
+        ]
+        widgets = {
+            'is_default': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if field_name != 'is_default':
+                field.widget.attrs.update({'class': 'form-control'})

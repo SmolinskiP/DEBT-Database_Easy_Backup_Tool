@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load backup_tags %}
 
-{% block title %}Edit Schedule - DB Backup Tool{% endblock %}
+{% block title %}Edit Schedule - DEBT{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -17,7 +17,7 @@
                 <h5 class="mb-0">Schedule Configuration</h5>
             </div>
             <div class="card-body">
-                <form method="post" id="schedule-form">
+                <form method="post" id="schedule-form" enctype="multipart/form-data">
                     {% csrf_token %}
                     
                     <div class="mb-3">
@@ -75,6 +75,61 @@
                         {{ form.email_address }}
                     </div>
                     
+                    <h5 class="mt-4 mb-3">Storage Options</h5>
+
+                    <div class="mb-3">
+                        <label for="id_storage_config" class="form-label">Storage Configuration</label>
+                        {{ form.storage_config }}
+                        <small class="form-text text-muted">Select a predefined storage configuration or configure custom settings below</small>
+                    </div>
+
+                    <div id="custom-storage-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="id_storage_type" class="form-label">Storage Type</label>
+                            {{ form.storage_type }}
+                        </div>
+
+                        <div id="remote-storage-fields" style="display: none;">
+                            <div class="mb-3">
+                                <label for="id_remote_hostname" class="form-label">Server Hostname</label>
+                                {{ form.remote_hostname }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_remote_port" class="form-label">Server Port</label>
+                                {{ form.remote_port }}
+                                <small class="form-text text-muted">Default: 21 for FTP, 22 for SFTP</small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_remote_username" class="form-label">Username</label>
+                                {{ form.remote_username }}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_remote_password" class="form-label">Password</label>
+                                {{ form.remote_password }}
+                                <small class="form-text text-muted">Leave empty to keep existing password</small>
+                            </div>
+                            
+                            <div class="mb-3 sftp-only" style="display: none;">
+                                <label for="id_remote_key_file" class="form-label">SSH Key (optional)</label>
+                                {{ form.remote_key_file }}
+                                {% if task.remote_key_file %}
+                                    <div class="mt-2">
+                                        <span class="badge bg-info">Current key: {{ task.remote_key_file.name }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="id_remote_path" class="form-label">Remote Path</label>
+                                {{ form.remote_path }}
+                                <small class="form-text text-muted">Directory on remote server where backups will be stored</small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -110,6 +165,23 @@
                             {{ task.next_run|date:"d.m.Y H:i:s" }}
                         {% else %}
                             <span class="text-muted">Not scheduled</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Storage:</strong></div>
+                    <div class="col-md-8">
+                        {% if task.storage_config %}
+                            <span class="badge {% if task.storage_config.storage_type == 'local' %}bg-secondary{% elif task.storage_config.storage_type == 'ftp' %}bg-primary{% else %}bg-info{% endif %}">
+                                {{ task.storage_config.name }}
+                            </span>
+                        {% else %}
+                            <span class="badge {% if task.storage_type == 'local' %}bg-secondary{% elif task.storage_type == 'ftp' %}bg-primary{% else %}bg-info{% endif %}">
+                                {{ task.get_storage_type_display }}
+                            </span>
+                            {% if task.storage_type != 'local' %}
+                                ({{ task.remote_hostname }})
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -219,13 +291,43 @@
             }
         }
         
+        // Function to toggle storage fields
+        function toggleStorageFields() {
+            const storageConfig = $('#id_storage_config').val();
+            const storageType = $('#id_storage_type').val();
+            
+            // First handle storage config selection
+            if (!storageConfig || storageConfig === '') {
+                $('#custom-storage-fields').show();
+                
+                // Then handle storage type
+                if (storageType === 'local') {
+                    $('#remote-storage-fields').hide();
+                } else {
+                    $('#remote-storage-fields').show();
+                    
+                    // Handle SFTP-specific fields
+                    if (storageType === 'sftp') {
+                        $('.sftp-only').show();
+                    } else {
+                        $('.sftp-only').hide();
+                    }
+                }
+            } else {
+                $('#custom-storage-fields').hide();
+            }
+        }
+        
         // Call functions on startup
         toggleFrequencyFields();
         toggleEmailField();
+        toggleStorageFields();
         
         // Handle changes
         $('#id_frequency').change(toggleFrequencyFields);
         $('#id_email_notification').change(toggleEmailField);
+        $('#id_storage_config').change(toggleStorageFields);
+        $('#id_storage_type').change(toggleStorageFields);
     });
 </script>
 {% endblock %}

@@ -80,6 +80,7 @@ class BackupTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    storage_config = models.ForeignKey('StorageConfig', on_delete=models.SET_NULL, null=True, blank=True)
     storage_type = models.CharField(max_length=10, choices=STORAGE_CHOICES, default='local')
     # Dane FTP/SFTP
     remote_hostname = models.CharField(max_length=255, blank=True, null=True)
@@ -94,7 +95,19 @@ class BackupTask(models.Model):
         return f"{self.name} ({self.get_frequency_display()} - {self.server.name})"
     
     def save(self, *args, **kwargs):
+        # Obliczanie następnego uruchomienia
         self._calculate_next_run()
+        
+        # Synchronizacja danych storage_config z polami remote_*
+        if self.storage_config:
+            self.storage_type = self.storage_config.storage_type
+            self.remote_hostname = self.storage_config.hostname
+            self.remote_port = self.storage_config.port
+            self.remote_username = self.storage_config.username
+            if self.storage_config.password and not self.remote_password:  # Nie nadpisuj hasła jeśli już jest
+                self.remote_password = self.storage_config.password
+            self.remote_path = self.storage_config.path or self.remote_path
+            
         super().save(*args, **kwargs)
     
     def _calculate_next_run(self):
@@ -172,3 +185,57 @@ class BackupHistory(models.Model):
 
     def has_file(self):
         return bool(self.file_path and os.path.exists(self.file_path))
+
+class StorageConfig(models.Model):
+    """Model for storage configuration"""
+    STORAGE_CHOICES = (
+        ('local', 'Local Storage'),
+        ('ftp', 'FTP Server'),
+        ('sftp', 'SFTP Server'),
+    )
+    
+    name = models.CharField(max_length=100)
+    storage_type = models.CharField(max_length=10, choices=STORAGE_CHOICES, default='local')
+    is_default = models.BooleanField(default=False)
+    
+    # FTP/SFTP settings
+    hostname = models.CharField(max_length=255, blank=True, null=True)
+    port = models.IntegerField(blank=True, null=True)
+    username = models.CharField(max_length=100, blank=True, null=True)
+    password = models.CharField(max_length=255, blank=True, null=True)
+    path = models.CharField(max_length=255, blank=True, null=True, 
+                           help_text="Path on remote server where backups will be stored")
+    key_file = models.FileField(upload_to='storage_keys/', blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_storage_type_display()})"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one default configuration
+        if self.is_default:
+            StorageConfig.objects.filter(is_default=True).exclude(id=self.id).update(is_default=False)
+        super().save(*args, **kwargs)
+
+class AppSettings(models.Model):
+    """Model for application settings"""
+    key = models.CharField(max_length=50, unique=True)
+    value = models.TextField()
+    
+    @classmethod
+    def get(cls, key, default=None):
+        try:
+            setting = cls.objects.get(key=key)
+            return setting.value
+        except cls.DoesNotExist:
+            return default
+    
+    @classmethod
+    def set(cls, key, value):
+        obj, created = cls.objects.update_or_create(
+            key=key,
+            defaults={'value': value}
+        )
+        return obj

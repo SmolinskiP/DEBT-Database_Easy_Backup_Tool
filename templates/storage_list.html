@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+
+{% block title %}Storage Configurations - DEBT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h1 class="mb-0">Storage Configurations</h1>
+        <a href="{% url 'add_storage' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Storage
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        {% if storage_configs %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Connection</th>
+                            <th>Default</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for storage in storage_configs %}
+                            <tr>
+                                <td>{{ storage.name }}</td>
+                                <td>
+                                    <span class="badge {% if storage.storage_type == 'local' %}bg-secondary{% elif storage.storage_type == 'ftp' %}bg-primary{% else %}bg-info{% endif %}">
+                                        {{ storage.get_storage_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if storage.storage_type != 'local' %}
+                                        {{ storage.hostname }}{% if storage.port %}:{{ storage.port }}{% endif %}
+                                    {% else %}
+                                        Local filesystem
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if storage.is_default %}
+                                        <span class="badge bg-success">Default</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'edit_storage' storage.id %}" class="btn btn-sm btn-outline-secondary me-1">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger delete-storage-btn" 
+                                                data-storage-id="{{ storage.id }}" 
+                                                data-storage-name="{{ storage.name }}">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-hdd-rack fs-1 text-muted"></i>
+                    <h4 class="mt-3">No Storage Configurations</h4>
+                    <p class="text-muted">Add your first storage configuration.</p>
+                    <a href="{% url 'add_storage' %}" class="btn btn-primary mt-2">
+                        <i class="bi bi-plus-circle"></i> Add Storage
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteStorageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete storage configuration <strong id="storageNameToDelete"></strong>?</p>
+                <p>This will not affect existing backups but may affect backup tasks using this storage.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteStorage">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Modal -->
+<div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark">
+            <div class="modal-header">
+                <h5 class="modal-title">Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="messageContent" class="alert"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Storage deletion handler
+        let storageIdToDelete = null;
+        
+        $('.delete-storage-btn').click(function() {
+            storageIdToDelete = $(this).data('storage-id');
+            const storageName = $(this).data('storage-name');
+            $('#storageNameToDelete').text(storageName);
+            $('#deleteStorageModal').modal('show');
+        });
+        
+        $('#confirmDeleteStorage').click(function() {
+            if (storageIdToDelete) {
+                $(this).prop('disabled', true);
+                $(this).html('<span class="spinner-border spinner-border-sm"></span> Deleting...');
+                
+                // Send delete request
+                $.ajax({
+                    url: '/api/storage/' + storageIdToDelete + '/',
+                    type: 'DELETE',
+                    success: function(response) {
+                        $('#deleteStorageModal').modal('hide');
+                        
+                        // Display success message
+                        $('#messageContent').removeClass('alert-danger').addClass('alert-success').text(response.message);
+                        $('#messageModal').modal('show');
+                        
+                        // Refresh page after closing modal
+                        $('#messageModal').on('hidden.bs.modal', function() {
+                            location.reload();
+                        });
+                    },
+                    error: function(xhr) {
+                        $('#deleteStorageModal').modal('hide');
+                        
+                        // Display error message
+                        let errorMsg = 'Error while deleting storage configuration.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
+                        
+                        $('#messageContent').removeClass('alert-success').addClass('alert-danger').text(errorMsg);
+                        $('#messageModal').modal('show');
+                        
+                        // Reset button
+                        $('#confirmDeleteStorage').prop('disabled', false).html('Delete');
+                    }
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

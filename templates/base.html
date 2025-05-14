@@ -5,304 +5,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}DB Backup Tool{% endblock %}</title>
+    <title>{% block title %}DEBT - Database Easy Backup Tool{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css">
-    <style>
-        :root {
-            --bg-primary: #121212;
-            --bg-secondary: #1e1e1e;
-            --bg-tertiary: #2d2d2d;
-            --text-primary: #e0e0e0;
-            --text-secondary: #aaaaaa;
-            --accent-primary: #7952b3;
-            --border-color: #333333;
-        }
-        
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-        
-        .navbar {
-            background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .navbar-brand {
-            color: var(--accent-primary);
-            font-weight: bold;
-        }
-        
-        .nav-link {
-            color: var(--text-secondary);
-        }
-        
-        .nav-link:hover, .nav-link.active {
-            color: var(--text-primary);
-            background-color: var(--bg-tertiary);
-        }
-        
-        .card {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-        }
-        
-        .card-header {
-            background-color: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .form-control, .form-select {
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-        }
-        
-        .ssh-field-container {
-            display: none;
-        }
-        
-        .ssh-field-container.visible {
-            display: block;
-        }
-        
-        #connection-test-result {
-            display: none;
-            margin-top: 15px;
-        }
-            .status-indicator {
-        display: inline-block;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-    }
-    
-    .status-success {
-        background-color: #28a745;
-    }
-    
-    .status-danger {
-        background-color: #dc3545;
-    }
-    
-    .status-warning {
-        background-color: #ffc107;
-    }
-    
-    /* Table readability improvements */
-    .table {
-        color: var(--text-primary);
-        border-color: var(--border-color);
-    }
-    
-    .table thead th {
-        font-weight: 600;
-        border-bottom-width: 1px;
-        background-color: rgba(0, 0, 0, 0.2);
-    }
-    
-    .table td {
-        vertical-align: middle;
-    }
-    
-    /* Text readability improvement */
-    .text-muted {
-        color: #adb5bd !important;
-    }
-    
-    .badge {
-        font-weight: 500;
-        padding: 0.35em 0.65em;
-    }
-        .navbar {
-        padding: 0.5rem 1rem;
-        background-color: var(--bg-secondary);
-        border-bottom: 1px solid var(--border-color);
-    }
-    
-    .nav-link {
-        color: var(--text-secondary);
-        padding: 0.75rem 1rem;
-        margin: 0 0.2rem;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-    }
-    
-    .nav-link:hover {
-        color: var(--text-primary);
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-    
-    .nav-link.active {
-        color: var(--text-primary);
-        background-color: var(--accent-primary);
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-        font-weight: 500;
-    }
-    
-    .nav-link i {
-        margin-right: 0.5rem;
-    }
-    
-    .navbar-brand {
-        color: var(--accent-primary);
-        font-weight: bold;
-        font-size: 1.25rem;
-        padding: 0.5rem 0;
-    }
-    
-    .navbar-brand i {
-        margin-right: 0.5rem;
-    }
-        .dropdown-menu {
-        background-color: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.5);
-    }
-    
-    .dropdown-item {
-        color: var(--text-secondary);
-    }
-    
-    .dropdown-item:hover, .dropdown-item:focus {
-        color: var(--text-primary);
-        background-color: var(--bg-tertiary);
-    }
-    
-    .dropdown-divider {
-        border-top: 1px solid var(--border-color);
-    }
-    
-    /* User menu styles */
-    .user-dropdown .dropdown-toggle::after {
-        vertical-align: middle;
-    }
-    
-    .user-dropdown .dropdown-menu {
-        margin-top: 0.5rem;
-        right: 0;
-        left: auto;
-    }
-    
-    /* Active state for user menu */
-    .navbar .dropdown-item.active, 
-    .navbar .dropdown-item:active {
-        background-color: var(--accent-primary);
-        color: white;
-    }
-    .dropdown-item.btn-logout {
-    border: none;
-    background: none;
-    text-align: left;
-    width: 100%;
-    padding: 0.25rem 1rem;
-    color: var(--text-secondary);
-}
-
-.dropdown-item.btn-logout:hover,
-.dropdown-item.btn-logout:focus {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
-}
-
-#logout-form {
-    margin: 0;
-    padding: 0;
-}
-.user-dropdown .dropdown-toggle {
-    color: var(--accent-primary) !important; /* Using accent color instead of default */
-    font-weight: 500; /* Slightly bolder text */
-}
-
-.user-dropdown .dropdown-toggle:hover,
-.user-dropdown .dropdown-toggle:focus,
-.user-dropdown.show .dropdown-toggle {
-    color: white !important; /* White text on hover and focus */
-    background-color: rgba(121, 82, 179, 0.2); /* Light background highlight */
-}
-
-/* More pronounced user icon */
-.user-dropdown .bi-person-circle {
-    color: var(--accent-primary);
-    margin-right: 5px;
-}
-
-/* Highlight entire dropdown when open */
-.user-dropdown.show {
-    background-color: rgba(121, 82, 179, 0.1);
-    border-radius: 4px;
-}
-.username-text {
-    position: relative;
-    z-index: 1;
-    text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.8); /* Text shadow for better readability */
-}
-
-/* Button styling in dropdown */
-.dropdown-item {
-    border-radius: 4px;
-    margin: 2px 5px;
-    padding: 6px 10px;
-}
-
-/* Style logout button to look like a link */
-#logout-form .dropdown-item {
-    color: var(--text-secondary);
-    text-align: left;
-    width: calc(100% - 10px);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 6px 10px;
-}
-
-#logout-form .dropdown-item:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-tertiary);
-}
-
-.action-buttons .btn {
-    margin-right: 4px; /* Extra space between buttons */
-    border-radius: 4px; /* More rounded corners */
-}
-
-.action-buttons .btn:last-child {
-    margin-right: 0; /* Remove margin from last button */
-}
-
-/* Optional: improved button appearance on hover */
-.btn-outline-primary:hover {
-    background-color: rgba(121, 82, 179, 0.15);
-    border-color: var(--accent-primary);
-    color: var(--text-primary);
-}
-
-.btn-outline-secondary:hover {
-    background-color: rgba(180, 180, 180, 0.15);
-    border-color: #6c757d;
-    color: var(--text-primary);
-}
-
-.btn-outline-danger:hover {
-    background-color: rgba(220, 53, 69, 0.15);
-    border-color: #dc3545;
-    color: var(--text-primary);
-}
-
-.btn-outline-warning:hover {
-    background-color: rgba(255, 193, 7, 0.15);
-    border-color: #ffc107;
-    color: var(--text-primary);
-}
-
-.btn-outline-success:hover {
-    background-color: rgba(40, 167, 69, 0.15);
-    border-color: #28a745;
-    color: var(--text-primary);
-}
-    </style>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -310,7 +16,7 @@
     <nav class="navbar navbar-expand-lg mb-4">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="bi bi-database-fill"></i> DB Backup Tool
+                <i class="bi bi-database-fill"></i> DEBT
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -340,6 +46,16 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/backups/' %}active{% endif %}" href="{% url 'backup_files' %}">
                             <i class="bi bi-file-earmark-zip"></i> Backups
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/storage/' %}active{% endif %}" href="{% url 'storage_list' %}">
+                            <i class="bi bi-hdd-rack"></i> Storage
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/settings/' %}active{% endif %}" href="{% url 'settings' %}">
+                            <i class="bi bi-gear"></i> Settings
                         </a>
                     </li>
                 </ul>

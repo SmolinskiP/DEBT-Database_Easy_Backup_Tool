@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Storage - DEBT{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="mb-4">Add Storage Configuration</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Storage Details</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="id_name" class="form-label">Configuration Name</label>
+                        {{ form.name }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="id_storage_type" class="form-label">Storage Type</label>
+                        {{ form.storage_type }}
+                    </div>
+                    
+                    <div class="mb-3 form-check form-switch">
+                        {{ form.is_default }}
+                        <label class="form-check-label" for="id_is_default">Set as Default Storage</label>
+                    </div>
+                    
+                    <div id="remote-storage-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="id_hostname" class="form-label">Server Hostname</label>
+                            {{ form.hostname }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_port" class="form-label">Server Port</label>
+                            {{ form.port }}
+                            <small class="form-text text-muted">Default: 21 for FTP, 22 for SFTP</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            {{ form.username }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">Password</label>
+                            {{ form.password }}
+                        </div>
+                        
+                        <div class="mb-3 sftp-only" style="display: none;">
+                            <label for="id_key_file" class="form-label">SSH Key (optional)</label>
+                            {{ form.key_file }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_path" class="form-label">Remote Path</label>
+                            {{ form.path }}
+                            <small class="form-text text-muted">Directory on remote server where backups will be stored</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'storage_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Storage</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Fix classes for checkbox
+        $('#id_is_default').removeClass('form-control').addClass('form-check-input');
+        
+        // Function to toggle remote storage fields
+        function toggleStorageFields() {
+            const storageType = $('#id_storage_type').val();
+            
+            if (storageType === 'local') {
+                $('#remote-storage-fields').hide();
+            } else {
+                $('#remote-storage-fields').show();
+                
+                // Handle SFTP-specific fields
+                if (storageType === 'sftp') {
+                    $('.sftp-only').show();
+                } else {
+                    $('.sftp-only').hide();
+                }
+            }
+        }
+        
+        // Call on page load
+        toggleStorageFields();
+        
+        // Call when storage type changes
+        $('#id_storage_type').change(toggleStorageFields);
+    });
+</script>
+{% endblock %}
