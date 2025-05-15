@@ -114,6 +114,58 @@ For non-Debian systems, you will need to:
 - Manually configure Celery and Redis
 - Set up appropriate web server configurations
 
+# Configuration Changes and Celery Restart Guide
+
+## Important Notice
+
+When you make changes to configuration files (`.env` or `settings.py`), those changes are **not automatically picked up** by running Celery workers. Celery workers load the configuration only once at startup.
+
+## When to Restart Celery
+
+Restart Celery workers and beat scheduler after changing:
+- Email configuration
+- Database settings
+- Redis connection settings
+- Storage paths/configuration
+- Any other settings in `.env` or `settings.py`
+
+## Restart Commands
+
+```bash
+# If running as systemd services (recommended)
+sudo systemctl restart celery-worker.service
+sudo systemctl restart celery-beat.service
+
+# If running manually
+# First, find and stop existing processes
+ps aux | grep celery
+kill [PID]  # replace [PID] with actual process ID
+
+# Then start them again
+cd /path/to/db_backup_tool
+/path/to/venv/bin/celery -A db_backup_tool worker -l info
+/path/to/venv/bin/celery -A db_backup_tool beat -l info
+```
+
+## Verification
+
+After restarting services, check logs to confirm the new configuration has been loaded:
+
+```bash
+sudo journalctl -u celery-worker -n 50
+sudo journalctl -u celery-beat -n 50
+```
+
+Or check application logs in `/var/www/backup_app/db_backup_tool/logs/debug.log`
+
+## Common Issues
+
+1. **Email not sent with correct sender**: Celery still using old email configuration
+2. **Tasks not running at expected times**: Beat scheduler needs to be restarted
+3. **Changes to backup storage not applied**: Worker needs to be restarted
+
+Always restart both services to ensure consistent behavior across the application.
+
 ## License
 
 [MIT License](LICENSE)
