@@ -12,7 +12,6 @@ A comprehensive web-based tool for backing up MySQL/MariaDB and PostgreSQL datab
 - **Storage Options**: Local storage, FTP, SFTP, and Google Drive integration
 - **Backup Management**: Retention policies, manual execution, and restoration
 - **Email Notifications**: Get alerts on backup success/failure
-- **User Authentication**: Multi-user support with permissions
 - **Detailed History**: Track all backup operations with comprehensive logs
 - **Dark UI**: Clean, modern interface for easy management
 
