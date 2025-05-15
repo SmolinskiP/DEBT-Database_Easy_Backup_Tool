@@ -181,7 +181,7 @@ server {
 }
 ${NC}"
 
-echo -e "\n${GREEN}Tworzenie skryptu startowego dla aplikacji...${NC}"
+echo -e "\n${GREEN}Creating application startup script...${NC}"
 
 cat > $APP_PATH/start_app.sh << EOF
 #!/bin/bash
@@ -189,10 +189,10 @@ cd $APP_PATH/db_backup_tool
 $VENV_PATH/bin/python manage.py runserver 0.0.0.0:8000
 EOF
 
-# Nadaj uprawnienia wykonywania
+# Set execution permissions
 chmod +x $APP_PATH/start_app.sh
 chown $APP_USER:$APP_GROUP $APP_PATH/start_app.sh
 
-echo -e "\n${GREEN}Skrypt startowy utworzony!${NC}"
-echo -e "Aby uruchomić aplikację, wykonaj: ${YELLOW}$APP_PATH/start_app.sh${NC}"
-echo -e "${YELLOW}UWAGA: Django runserver NIE jest zalecany do użytku produkcyjnego. Używaj tylko do celów rozwojowych!${NC}"
+echo -e "\n${GREEN}Startup script created!${NC}"
+echo -e "To run the application, execute: ${YELLOW}$APP_PATH/start_app.sh${NC}"
+echo -e "${YELLOW}WARNING: Django runserver is NOT recommended for production use. Use only for development purposes!${NC}"
