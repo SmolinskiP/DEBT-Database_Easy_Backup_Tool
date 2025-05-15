@@ -189,32 +189,26 @@
 </div>
 {% endblock %}
 
-<!-- Add to extra_js block in dashboard.html -->
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // Function to test existing server
         $('.test-server-btn').click(function() {
             const serverId = $(this).data('server-id');
             const button = $(this);
             const row = button.closest('tr');
-            
-            // Change button state
+
             button.prop('disabled', true);
             button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
-            
-            // Send data to API
+
             $.ajax({
                 url: '/api/test-connection/',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ server_id: serverId }),
                 success: function(response) {
-                    // Restore button
                     button.prop('disabled', false);
                     button.html('<i class="bi bi-speedometer"></i> Test');
                     
-                    // Update status
                     if (response.success) {
                         row.find('.status-indicator').removeClass('status-danger status-warning').addClass('status-success');
                         row.find('.status-indicator').next('span').text('Online');
@@ -223,7 +217,6 @@
                         row.find('.status-indicator').next('span').text('Offline');
                     }
                     
-                    // Update check time
                     const now = new Date();
                     const formattedDate = now.getDate().toString().padStart(2, '0') + '.' +
                                          (now.getMonth() + 1).toString().padStart(2, '0') + '.' +
@@ -232,8 +225,7 @@
                                          now.getMinutes().toString().padStart(2, '0');
                     
                     row.find('small.text-muted').text('Checked: ' + formattedDate);
-                    
-                    // Show test result
+
                     $('#connectionTestResult').removeClass('alert-success alert-danger')
                                              .addClass(response.success ? 'alert-success' : 'alert-danger')
                                              .text(response.message);
@@ -250,6 +242,69 @@
                 }
             });
         });
+
+        function testServerInBackground(serverId, row) {
+            const button = row.find('.test-server-btn');
+            button.prop('disabled', true);
+            button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+            $.ajax({
+                url: '/api/test-connection/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ server_id: serverId }),
+                success: function(response) {
+                    if (response.success) {
+                        row.find('.status-indicator').removeClass('status-danger status-warning').addClass('status-success');
+                        row.find('.status-indicator').next('span').text('Online');
+                    } else {
+                        row.find('.status-indicator').removeClass('status-success status-warning').addClass('status-danger');
+                        row.find('.status-indicator').next('span').text('Offline');
+                    }
+
+                    const now = new Date();
+                    const formattedDate = now.getDate().toString().padStart(2, '0') + '.' +
+                                         (now.getMonth() + 1).toString().padStart(2, '0') + '.' +
+                                         now.getFullYear() + ' ' +
+                                         now.getHours().toString().padStart(2, '0') + ':' +
+                                         now.getMinutes().toString().padStart(2, '0');
+                    
+                    row.find('small.text-muted').text('Checked: ' + formattedDate);
+
+                    button.prop('disabled', false);
+                    button.html('<i class="bi bi-speedometer"></i> Test');
+                },
+                error: function() {
+                    row.find('.status-indicator').removeClass('status-success status-warning').addClass('status-danger');
+                    row.find('.status-indicator').next('span').text('Error');
+                    
+                    button.prop('disabled', false);
+                    button.html('<i class="bi bi-speedometer"></i> Test');
+                }
+            });
+        }
+
+        function testAllServers() {
+            const serverRows = $('table tbody tr');
+            let currentIndex = 0;
+
+            function processNextServer() {
+                if (currentIndex < serverRows.length) {
+                    const row = $(serverRows[currentIndex]);
+                    const serverId = row.find('.test-server-btn').data('server-id');
+                    
+                    if (serverId) {
+                        testServerInBackground(serverId, row);
+                    }
+                    
+                    currentIndex++;
+                    setTimeout(processNextServer, 500);
+                }
+            }
+            processNextServer();
+        }
+
+        testAllServers();
     });
 </script>
 {% endblock %}
