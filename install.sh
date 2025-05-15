@@ -181,10 +181,18 @@ server {
 }
 ${NC}"
 
-echo -e "3. You can run the application using Gunicorn:"
-echo -e "${GREEN}$VENV_PATH/bin/pip install gunicorn${NC}"
-echo -e "${GREEN}$VENV_PATH/bin/gunicorn db_backup_tool.wsgi:application --bind 127.0.0.1:8000${NC}"
+echo -e "\n${GREEN}Tworzenie skryptu startowego dla aplikacji...${NC}"
 
-echo -e "\n${GREEN}=== INSTALLATION COMPLETE ===${NC}"
-echo -e "That was easy! Application installed at: ${YELLOW}$APP_PATH/db_backup_tool${NC}"
-echo -e "Check services status: ${YELLOW}systemctl status celery-worker.service${NC}"
+cat > $APP_PATH/start_app.sh << EOF
+#!/bin/bash
+cd $APP_PATH/db_backup_tool
+$VENV_PATH/bin/python manage.py runserver 0.0.0.0:8000
+EOF
+
+# Nadaj uprawnienia wykonywania
+chmod +x $APP_PATH/start_app.sh
+chown $APP_USER:$APP_GROUP $APP_PATH/start_app.sh
+
+echo -e "\n${GREEN}Skrypt startowy utworzony!${NC}"
+echo -e "Aby uruchomić aplikację, wykonaj: ${YELLOW}$APP_PATH/start_app.sh${NC}"
+echo -e "${YELLOW}UWAGA: Django runserver NIE jest zalecany do użytku produkcyjnego. Używaj tylko do celów rozwojowych!${NC}"
