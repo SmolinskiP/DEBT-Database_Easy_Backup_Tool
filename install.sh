@@ -5,7 +5,7 @@ APP_PATH="/var/www/backup_app"
 APP_USER="$(whoami)"
 APP_GROUP="www-data"
 VENV_PATH="$APP_PATH/venv"
-REPO_URL="https://github.com/SmolinskiP/db_backup_tool.git"
+REPO_URL="https://github.com/SmolinskiP/DEBT-Database_Easy_Backup_Tool.git"
 
 # Colors for output
 RED='\033[0;31m'
@@ -13,7 +13,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}=== DB Backup Tool - Installer ===${NC}"
+echo -e "${GREEN}=== DEBT - Database Easy Backup Tool - Installer ===${NC}"
 echo -e "Installation path: ${YELLOW}$APP_PATH${NC}"
 echo -e "User: ${YELLOW}$APP_USER${NC}"
 
