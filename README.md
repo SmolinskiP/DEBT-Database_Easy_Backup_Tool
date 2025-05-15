@@ -52,7 +52,7 @@ If you prefer manual installation or are using a non-Debian system:
 1. Install required system packages:
    ```bash
    # On Debian/Ubuntu
-   apt-get install python3 python3-venv python3-pip redis-server default-mysql-client postgresql-client build-essential libssl-dev libffi-dev python3-dev
+   apt-get install python3 python3-venv python3-pip redis-server default-mysql-client postgresql-client build-essential libssl-dev libffi-dev python3-dev postgresql-client libpq-dev pkg-config default-libmysqlclient-dev
    ```
 
 2. Create a virtual environment and install dependencies:
