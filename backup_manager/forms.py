@@ -23,6 +23,13 @@ class DatabaseServerForm(forms.ModelForm):
         ssh_fields = ['ssh_hostname', 'ssh_port', 'ssh_username', 'ssh_password', 'ssh_key_file']
         for field in ssh_fields:
             self.fields[field].widget.attrs.update({'class': 'ssh-field form-control'})
+            
+        # Set initial port value based on connection type
+        if not self.instance.pk:  # Only for new servers
+            self.fields['port'].initial = 3306  # Default to MySQL port
+        
+        # Add help text for database_name
+        self.fields['database_name'].help_text = "Specific database to backup. For PostgreSQL, leave empty for all databases (requires superuser privileges)."
 
 class BackupTaskForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

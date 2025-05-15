@@ -1,3 +1,4 @@
+<!-- templates/add_server.html -->
 {% extends 'base.html' %}
 
 {% block title %}Add Server - Database Easy Backup Tool{% endblock %}
@@ -37,6 +38,7 @@
                     <div class="mb-3">
                         <label for="id_port" class="form-label">Database Port</label>
                         {{ form.port }}
+                        <small class="form-text text-muted" id="port-help">Default: 3306 for MySQL, 5432 for PostgreSQL</small>
                     </div>
                     
                     <div class="mb-3">
@@ -104,16 +106,33 @@
         
         // Function to manage SSH field visibility
         function toggleSSHFields() {
-            if ($('select[name="connection_type"]').val() === 'ssh') {
+            if ($('select[name="connection_type"]').val().includes('ssh')) {
                 $('#ssh-fields-container').addClass('visible');
             } else {
                 $('#ssh-fields-container').removeClass('visible');
             }
         }
         
+        // Function to update default port based on selected connection type
+        function updateDefaultPort() {
+            const connType = $('select[name="connection_type"]').val();
+            const portField = $('#id_port');
+            
+            // Only update if user hasn't changed the port value
+            if (connType.includes('mysql') && (portField.val() === '' || portField.val() === '5432')) {
+                portField.val(3306);
+            } else if (connType.includes('postgresql') && (portField.val() === '' || portField.val() === '3306')) {
+                portField.val(5432);
+            }
+        }
+        
         // Call on start and on change
         toggleSSHFields();
-        $('select[name="connection_type"]').change(toggleSSHFields);
+        updateDefaultPort();
+        $('select[name="connection_type"]').change(function() {
+            toggleSSHFields();
+            updateDefaultPort();
+        });
     });
 </script>
 {% endblock %}

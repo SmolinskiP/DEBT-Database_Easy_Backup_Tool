@@ -307,20 +307,26 @@ def restore_backup_task(backup_id, history_id):
         
         file_log(f"Found backup for server: {server.name}")
         file_log(f"Backup file: {backup.file_path}")
+        file_log(f"Connection type: {server.connection_type}")
         
         if not backup.file_path or not os.path.exists(backup.file_path):
             error_msg = "Backup file does not exist"
             file_log(f"ERROR: {error_msg}")
             raise FileNotFoundError(error_msg)
         
-        file_log(f"Using connection type: {server.connection_type}")
-        
-        if server.connection_type == 'direct':
-            file_log("Performing direct restore")
+        # For backward compatibility with existing backups
+        if server.connection_type in ['direct', 'direct_mysql']:
+            file_log("Performing direct MySQL restore")
             result = _restore_direct(server, backup.file_path)
-        elif server.connection_type == 'ssh':
-            file_log("Performing SSH tunnel restore")
+        elif server.connection_type in ['ssh', 'ssh_mysql']:
+            file_log("Performing SSH tunnel MySQL restore")
             result = _restore_ssh_tunnel(server, backup.file_path)
+        elif server.connection_type == 'direct_postgresql':
+            file_log("Performing direct PostgreSQL restore")
+            result = _restore_postgresql_direct(server, backup.file_path)
+        elif server.connection_type == 'ssh_postgresql':
+            file_log("Performing SSH tunnel PostgreSQL restore")
+            result = _restore_postgresql_ssh_tunnel(server, backup.file_path)
         else:
             error_msg = f"Unsupported connection type: {server.connection_type}"
             file_log(f"ERROR: {error_msg}")
@@ -516,6 +522,220 @@ def _restore_ssh_tunnel(server, backup_file):
                 
     except Exception as e:
         error_msg = f'SSH tunnel error: {str(e)}'
+        file_log(f"ERROR: {error_msg}")
+        file_log(traceback.format_exc())
+        return {
+            'success': False,
+            'message': error_msg
+        }
+
+def _restore_postgresql_direct(server, backup_file):
+    """Restore PostgreSQL database directly via TCP/IP"""
+    file_log(f"Starting direct PostgreSQL restore for server: {server.name}")
+    file_log(f"Using backup file: {backup_file}")
+    
+    try:
+        # Check if psql/pg_restore client is installed
+        try:
+            file_log("Checking if PostgreSQL client is installed")
+            subprocess.run(['which', 'pg_restore'], check=True, capture_output=True)
+            file_log("PostgreSQL client found")
+        except subprocess.CalledProcessError:
+            error_msg = 'Error: pg_restore is not installed. Install PostgreSQL client on the server.'
+            file_log(f"ERROR: {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
+            }
+        
+        # Set environment variables for pg_restore
+        env = os.environ.copy()
+        env['PGPASSWORD'] = server.password
+        
+        # Determine if the backup is in custom format (pg_dump -Fc) or plain SQL
+        is_custom_format = False
+        with open(backup_file, 'rb') as f:
+            # Check the first few bytes for the PostgreSQL custom format signature
+            # Custom format files start with "PGDMP"
+            header = f.read(5)
+            if header.startswith(b'PGDMP'):
+                is_custom_format = True
+        
+        if is_custom_format:
+            # Build command for restoring custom format backup
+            cmd = [
+                'pg_restore',
+                '-h', server.hostname,
+                '-p', str(server.port),
+                '-U', server.username,
+                '-d', server.database_name if server.database_name else 'postgres',
+                '--clean',    # Clean (drop) database objects before recreating
+                '--no-owner', # Don't output commands to set ownership
+                '--no-privileges', # Don't restore privileges
+                '--verbose',  # Verbose mode
+                backup_file
+            ]
+        else:
+            # Plain SQL format - use psql
+            cmd = [
+                'psql',
+                '-h', server.hostname,
+                '-p', str(server.port),
+                '-U', server.username,
+                '-d', server.database_name if server.database_name else 'postgres',
+                '-f', backup_file
+            ]
+        
+        file_log(f"Running PostgreSQL restore command: {' '.join(cmd)}")
+        
+        result = subprocess.run(
+            cmd,
+            env=env,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            file_log("Restore command completed successfully")
+            return {
+                'success': True,
+                'message': 'PostgreSQL backup restored successfully'
+            }
+        else:
+            error_msg = f'Error during PostgreSQL restore: {result.stderr}'
+            file_log(f"ERROR: {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
+            }
+    except Exception as e:
+        error_msg = f'PostgreSQL restore error: {str(e)}'
+        file_log(f"ERROR: {error_msg}")
+        file_log(traceback.format_exc())
+        return {
+            'success': False,
+            'message': error_msg
+        }
+
+def _restore_postgresql_ssh_tunnel(server, backup_file):
+    """Restore PostgreSQL database through SSH tunnel"""
+    file_log(f"Starting SSH tunnel PostgreSQL restore for server: {server.name}")
+    file_log(f"Using backup file: {backup_file}")
+    
+    try:
+        # Validate SSH connection info
+        if not all([server.ssh_hostname, server.ssh_port, server.ssh_username]):
+            error_msg = 'Missing SSH data: hostname, port or username'
+            file_log(f"ERROR: {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
+            }
+        
+        if not server.ssh_password and not server.ssh_key_file:
+            error_msg = 'No SSH authentication method (password or key)'
+            file_log(f"ERROR: {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
+            }
+            
+        # Check if PostgreSQL client is installed
+        try:
+            file_log("Checking if PostgreSQL client is installed")
+            subprocess.run(['which', 'pg_restore'], check=True, capture_output=True)
+            file_log("PostgreSQL client found")
+        except subprocess.CalledProcessError:
+            error_msg = 'Error: pg_restore is not installed. Install PostgreSQL client on the server.'
+            file_log(f"ERROR: {error_msg}")
+            return {
+                'success': False,
+                'message': error_msg
+            }
+        
+        # Setup SSH tunnel configuration
+        file_log(f"Setting up SSH tunnel to {server.ssh_hostname}:{server.ssh_port}")
+        file_log(f"SSH username: {server.ssh_username}")
+        file_log(f"SSH authentication: {'Password' if server.ssh_password else 'Key'}")
+        
+        ssh_config = {
+            'ssh_address_or_host': (server.ssh_hostname, int(server.ssh_port)),
+            'ssh_username': server.ssh_username,
+            'remote_bind_address': (server.hostname, int(server.port))
+        }
+        
+        if server.ssh_password:
+            ssh_config['ssh_password'] = server.ssh_password
+        elif server.ssh_key_file and server.ssh_key_file.path:
+            ssh_config['ssh_pkey'] = server.ssh_key_file.path
+            file_log(f"Using SSH key file: {server.ssh_key_file.path}")
+            
+        # Set environment variables for pg_restore
+        env = os.environ.copy()
+        env['PGPASSWORD'] = server.password
+        
+        # Determine if the backup is in custom format (pg_dump -Fc) or plain SQL
+        is_custom_format = False
+        with open(backup_file, 'rb') as f:
+            # Check the first few bytes for the PostgreSQL custom format signature
+            header = f.read(5)
+            if header.startswith(b'PGDMP'):
+                is_custom_format = True
+                
+        file_log("Opening SSH tunnel")
+        with sshtunnel.SSHTunnelForwarder(**ssh_config) as tunnel:
+            file_log(f"SSH tunnel established, local port: {tunnel.local_bind_port}")
+            
+            if is_custom_format:
+                # Build command for restoring custom format backup through tunnel
+                cmd = [
+                    'pg_restore',
+                    '-h', '127.0.0.1',
+                    '-p', str(tunnel.local_bind_port),
+                    '-U', server.username,
+                    '-d', server.database_name if server.database_name else 'postgres',
+                    '--clean',    # Clean (drop) database objects before recreating
+                    '--no-owner', # Don't output commands to set ownership
+                    '--no-privileges', # Don't restore privileges
+                    '--verbose',  # Verbose mode
+                    backup_file
+                ]
+            else:
+                # Plain SQL format - use psql
+                cmd = [
+                    'psql',
+                    '-h', '127.0.0.1',
+                    '-p', str(tunnel.local_bind_port),
+                    '-U', server.username,
+                    '-d', server.database_name if server.database_name else 'postgres',
+                    '-f', backup_file
+                ]
+            
+            file_log(f"Running PostgreSQL restore command through tunnel: {' '.join(cmd)}")
+            
+            result = subprocess.run(
+                cmd,
+                env=env,
+                capture_output=True,
+                text=True
+            )
+            
+            if result.returncode == 0:
+                file_log("Restore command completed successfully")
+                return {
+                    'success': True,
+                    'message': 'PostgreSQL backup successfully restored through SSH tunnel'
+                }
+            else:
+                error_msg = f'Error during PostgreSQL restore: {result.stderr}'
+                file_log(f"ERROR: {error_msg}")
+                return {
+                    'success': False,
+                    'message': error_msg
+                }
+                
+    except Exception as e:
+        error_msg = f'SSH tunnel error for PostgreSQL restore: {str(e)}'
         file_log(f"ERROR: {error_msg}")
         file_log(traceback.format_exc())
         return {

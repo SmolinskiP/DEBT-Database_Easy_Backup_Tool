@@ -27,7 +27,7 @@ fi
 echo -e "\n${GREEN}Installing system dependencies...${NC}"
 apt-get update
 apt-get install -y python3 python3-venv python3-pip redis-server default-mysql-client \
-                   build-essential libssl-dev libffi-dev python3-dev git
+                   build-essential libssl-dev libffi-dev python3-dev git postgresql-client libpq-dev
 
 # Create application directory
 echo -e "\n${GREEN}Creating application directories...${NC}"

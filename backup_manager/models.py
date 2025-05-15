@@ -7,12 +7,14 @@ class DatabaseServer(models.Model):
     CONNECTION_TYPES = (
         ('direct', 'MariaDB/MySQL (TCP/IP)'),
         ('ssh', 'MariaDB/MySQL (SSH Tunnel)'),
+        ('direct_postgresql', 'PostgreSQL (TCP/IP)'),
+        ('ssh_postgresql', 'PostgreSQL (SSH Tunnel)'),
     )
     
     name = models.CharField(max_length=100)
-    connection_type = models.CharField(max_length=10, choices=CONNECTION_TYPES)
+    connection_type = models.CharField(max_length=20, choices=CONNECTION_TYPES)
     hostname = models.CharField(max_length=255)
-    port = models.IntegerField(default=3306)
+    port = models.IntegerField(default=0)
     username = models.CharField(max_length=100)
     password = models.CharField(max_length=255)
     database_name = models.CharField(max_length=100, blank=True, null=True,
@@ -35,6 +37,20 @@ class DatabaseServer(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.get_connection_type_display()})"
+
+    def get_default_port(self):
+        """Return default port based on connection type"""
+        if 'mysql' in self.connection_type:
+            return 3306
+        elif 'postgresql' in self.connection_type:
+            return 5432
+        return 0
+        
+    def save(self, *args, **kwargs):
+        # Set default port if not provided
+        if not self.port:
+            self.port = self.get_default_port()
+        super().save(*args, **kwargs)
 
 class BackupTask(models.Model):
     FREQUENCY_CHOICES = (
