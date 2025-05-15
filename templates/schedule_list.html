@@ -78,7 +78,7 @@
         <button type="button" class="btn btn-sm btn-outline-primary run-now-btn me-1" data-task-id="{{ task.id }}">
             <i class="bi bi-play-fill"></i> Run Now
         </button>
-        <button type="button" class="btn btn-sm {% if task.enabled %}btn-outline-danger{% else %}btn-outline-success{% endif %} toggle-btn me-1" data-task-id="{{ task.id }}">
+        <button type="button" class="btn btn-sm {% if task.enabled %}btn-outline-warning{% else %}btn-outline-success{% endif %} toggle-btn me-1" data-task-id="{{ task.id }}">
             {% if task.enabled %}
                 <i class="bi bi-pause-fill"></i> Disable
             {% else %}
@@ -215,13 +215,13 @@
                     
                     // Update UI
                     if (response.enabled) {
-                        button.removeClass('btn-outline-success').addClass('btn-outline-danger');
+                        button.removeClass('btn-outline-success').addClass('btn-outline-warning');
                         button.html('<i class="bi bi-pause-fill"></i> Disable');
-                        button.closest('tr').find('.badge').removeClass('bg-danger').addClass('bg-success').text('Active');
+                        button.closest('tr').find('td:nth-child(6) .badge').removeClass('bg-danger').addClass('bg-success').text('Active');
                     } else {
-                        button.removeClass('btn-outline-danger').addClass('btn-outline-success');
+                        button.removeClass('btn-outline-warning').addClass('btn-outline-success');
                         button.html('<i class="bi bi-play-fill"></i> Enable');
-                        button.closest('tr').find('.badge').removeClass('bg-success').addClass('bg-danger').text('Disabled');
+                        button.closest('tr').find('td:nth-child(6) .badge').removeClass('bg-success').addClass('bg-danger').text('Disabled');
                     }
                     
                     // Display message
