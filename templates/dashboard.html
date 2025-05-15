@@ -127,7 +127,7 @@
                                     </td>
                                     <td class="align-middle">
                                         <span class="badge bg-secondary">
-                                            {% if server.connection_type == 'direct' %}
+                                            {% if server.connection_type == 'direct' or server.connection_type == 'direct_postgresql' %}
                                                 <i class="bi bi-hdd-network"></i>
                                             {% else %}
                                                 <i class="bi bi-shield-lock"></i>
