@@ -179,6 +179,7 @@ def execute_backup_task(self, task_id):
             # Update task
             file_log("Updating task execution info...")
             task.last_run = timezone.now()
+            file_log(f"DEBUG: task.last_run - {task.last_run}")
             task._calculate_next_run()
             task.save()
             file_log(f"Task updated, next run: {task.next_run}")

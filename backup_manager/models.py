@@ -1,7 +1,27 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 import datetime
 import os
+
+def file_log(message):
+    """Log message to a file in logs directory"""
+    try:
+        log_dir = os.path.join(settings.BASE_DIR, 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        log_file = os.path.join(log_dir, 'debug.log')
+
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        with open(log_file, 'a') as f:
+            f.write(f"[{timestamp}] {message}\n")
+    except Exception as e:
+        try:
+            error_file = "/tmp/debt_backup_error.log"
+            with open(error_file, 'a') as f:
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                f.write(f"[{timestamp}] ERROR LOGGING: {str(e)}, Original message: {message}\n")
+        except:
+            pass
 
 class DatabaseServer(models.Model):
     CONNECTION_TYPES = (
@@ -131,17 +151,27 @@ class BackupTask(models.Model):
         super().save(*args, **kwargs)
     
     def _calculate_next_run(self):
-        now = timezone.now()
-        task_time = timezone.make_aware(
-            datetime.datetime.combine(now.date(), self.time)
-        )
+        file_log("DEBUG: _calculate_next_run CALLED")
+        now_utc = timezone.now()
+        # Convert to local time
+        now_local = timezone.localtime(now_utc)
         
+        # Create task time in local timezone
+        local_date = now_local.date()
+        local_task_time = timezone.make_aware(
+            datetime.datetime.combine(local_date, self.time),
+            timezone.get_current_timezone()
+        )
+
         if self.frequency == 'daily':
-            if task_time <= now:
-                self.next_run = task_time + datetime.timedelta(days=1)
+            file_log(f"DEBUG: Comparing times (now_local) - {now_local}")
+            file_log(f"DEBUG: Comparing times (task_time) - {local_task_time}")
+            # Both times are in local timezone, comparison is correct
+            if local_task_time <= now_local:
+                self.next_run = local_task_time + datetime.timedelta(days=1)
             else:
-                self.next_run = task_time
-                
+                self.next_run = local_task_time
+
         elif self.frequency == 'weekly':
             days_ahead = self.day_of_week - now.weekday()
             if days_ahead <= 0 or (days_ahead == 0 and task_time <= now):
