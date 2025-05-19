@@ -173,18 +173,18 @@ class BackupTask(models.Model):
                 self.next_run = local_task_time
 
         elif self.frequency == 'weekly':
-            days_ahead = self.day_of_week - now.weekday()
+            days_ahead = self.day_of_week - now_local.weekday()
             if days_ahead <= 0 or (days_ahead == 0 and task_time <= now):
                 days_ahead += 7
                 
-            next_date = now.date() + datetime.timedelta(days=days_ahead)
+            next_date = now_local.date() + datetime.timedelta(days=days_ahead)
             self.next_run = timezone.make_aware(
                 datetime.datetime.combine(next_date, self.time)
             )
             
         elif self.frequency == 'monthly':
-            month = now.month
-            year = now.year
+            month = now_local.month
+            year = now_local.year
             
             while True:
                 try:
@@ -193,7 +193,7 @@ class BackupTask(models.Model):
                         datetime.datetime.combine(next_date, self.time)
                     )
                     
-                    if next_datetime > now:
+                    if next_datetime > now_local:
                         self.next_run = next_datetime
                         break
                         

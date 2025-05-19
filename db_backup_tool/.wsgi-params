@@ -1,0 +1,8 @@
+import os
+import sys
+
+path = '/var/www/backup_app/db_backup_tool'
+if path not in sys.path:
+    sys.path.insert(0, path)
+
+os.chdir(path)

@@ -154,9 +154,26 @@ def execute_backup_task(self, task_id):
                     file_log("Storage successful, updating history...")
                     history.completed_at = timezone.now()
                     history.status = 'success'
+                    
+                    # Zachowaj oryginalny flow - użyj zwróconej ścieżki z funkcji storage ale
+                    # dodaj bezpieczną obsługę rozmiaru pliku
                     history.file_path = storage_result.get('path', result['path'])
-                    history.file_size = os.path.getsize(result['path'])
                     history.description = storage_result.get('message', '')
+                    
+                    # Zawsze pobieraj rozmiar z lokalnego pliku
+                    local_path = result['path']  # Oryginalna lokalna ścieżka
+                    try:
+                        if os.path.exists(local_path):
+                            file_log(f"Getting size of local file: {local_path}")
+                            history.file_size = os.path.getsize(local_path)
+                            file_log(f"File size: {history.file_size} bytes")
+                        else:
+                            file_log(f"WARNING: Local file not found: {local_path}")
+                            history.file_size = 0
+                    except Exception as e:
+                        file_log(f"ERROR getting file size: {str(e)}")
+                        history.file_size = 0
+                    
                     history.save()
                     file_log("History updated with success")
                 else:
