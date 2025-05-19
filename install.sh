@@ -110,20 +110,8 @@ su -c "$VENV_PATH/bin/python manage.py collectstatic --noinput" $APP_USER
 
 # Create system user if running as service
 echo -e "\n${GREEN}Creating application user...${NC}"
-read -p "Create Django user? (yes/no): " CREATE_USER
-if [[ $CREATE_USER =~ ^[Yy]es$ ]]; then
-  read -p "Username: " DJANGO_USER
-  read -p "Email (optional): " DJANGO_EMAIL
-  read -p "Administrator? (yes/no): " IS_ADMIN
-  
-  ADMIN_FLAG=""
-  if [[ $IS_ADMIN =~ ^[Yy]es$ ]]; then
-    ADMIN_FLAG="--admin"
-  fi
-  
-  su -c "$VENV_PATH/bin/python manage.py create_user $DJANGO_USER --email=$DJANGO_EMAIL $ADMIN_FLAG" $APP_USER
-  echo -e "${GREEN}User created successfully${NC}"
-fi
+DJANGO_SUPERUSER_PASSWORD=VeryStrongPassword su -c "$VENV_PATH/bin/python manage.py createsuperuser --username=admin --email=admin@example.com --noinput" $APP_USER
+echo -e "${GREEN}Admin user created successfully with username 'admin' and password 'VeryStrongPassword'${NC}"
 
 # Create systemd service files
 echo -e "\n${GREEN}Configuring system services...${NC}"
@@ -200,10 +188,19 @@ cd $APP_PATH/db_backup_tool
 $VENV_PATH/bin/python manage.py runserver 0.0.0.0:8000
 EOF
 
+SERVER_IP=$(hostname -I | awk '{print $1}')
+
 # Set execution permissions
 chmod +x $APP_PATH/start_app.sh
 chown $APP_USER:$APP_GROUP $APP_PATH/start_app.sh
 
 echo -e "\n${GREEN}Startup script created!${NC}"
-echo -e "To run the application, execute: ${YELLOW}$APP_PATH/start_app.sh${NC}"
 echo -e "${YELLOW}WARNING: Django runserver is NOT recommended for production use. Use only for development purposes!${NC}"
+
+echo -e "\n${YELLOW}=== IMPORTANT INFORMATION ===${NC}"
+echo -e "To run the application, execute: ${YELLOW}sudo $APP_PATH/start_app.sh${NC}"
+echo -e "Then open a web browser and go to: ${YELLOW}http://$SERVER_IP:8000${NC}"
+echo -e "${GREEN}Admin user credentials:${NC}"
+echo -e "Username: ${YELLOW}admin${NC}"
+echo -e "Password: ${YELLOW}VeryStrongPassword${NC}"
+echo -e "\n${RED}NOTE: This script must be run with sudo privileges!${NC}"
