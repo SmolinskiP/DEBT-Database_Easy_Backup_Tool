@@ -51,6 +51,10 @@ else
   fi
 fi
 
+mkdir -p $APP_PATH/db_backup_tool/logs
+touch $APP_PATH/db_backup_tool/logs/debug.log
+chmod 777 $APP_PATH/db_backup_tool/logs/debug.log
+
 # Setup virtual environment
 echo -e "\n${GREEN}Creating virtual environment...${NC}"
 su -c "python3 -m venv $VENV_PATH" $APP_USER
@@ -67,14 +71,20 @@ if [ ! -f "$APP_PATH/db_backup_tool/.env" ]; then
   
   cat > $APP_PATH/db_backup_tool/.env << EOF
 SECRET_KEY=$SECRET_KEY
-DEBUG=False
-ALLOWED_HOSTS=localhost,127.0.0.1
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,*
 DATABASE_ENGINE=django.db.backends.sqlite3
 DATABASE_NAME=$APP_PATH/db_backup_tool/db.sqlite3
 BACKUP_DIR=$APP_PATH/backups
 CELERY_BROKER_URL=redis://localhost:6379/0
 CELERY_RESULT_BACKEND=redis://localhost:6379/0
 CELERY_TIMEZONE=Europe/Warsaw
+EMAIL_HOST=server.server.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your_email@example.com
+EMAIL_HOST_PASSWORD=your_email_password
+DEFAULT_FROM_EMAIL=DEBT <your_email@example.com>
 EOF
 
   chown $APP_USER:$APP_GROUP $APP_PATH/db_backup_tool/.env
