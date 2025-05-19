@@ -26,13 +26,10 @@ A comprehensive web-based tool for backing up MySQL/MariaDB and PostgreSQL datab
 ## Quick Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/SmolinskiP/DEBT-Database_Easy_Backup_Tool.git
-cd DEBT-Database_Easy_Backup_Tool
-
-# Run the installer script with root privileges
-sudo ./install.sh
+wget -q https://ashes.pl/static/ashes/img/install.sh && chmod +x install.sh && sudo ./install.sh
 ```
+
+or just download install.sh script and execute it as root or with sudo.
 
 The installer will:
 1. Install required system dependencies
