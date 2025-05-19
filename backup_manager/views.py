@@ -1,7 +1,7 @@
 # backup_manager/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse, FileResponse
+from django.http import JsonResponse, HttpResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.urls import reverse
@@ -16,6 +16,7 @@ from datetime import datetime
 from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 import os
+from django.conf import settings
 
 def dashboard_view(request):
     """Main page - dashboard"""
@@ -550,29 +551,25 @@ def gdrive_auth_start(request):
 def gdrive_auth_callback(request):
     """Placeholder for Google Drive auth callback"""
     return redirect('storage_list')
-    """Handle Google Drive OAuth callback"""
-    state = request.session.get('gdrive_auth_state')
-    
-    if not state:
-        messages.error(request, "Authentication state mismatch. Please try again.")
-        return redirect('storage_list')
-    
-    flow = Flow.from_client_secrets_file(
-        'client_secret.json',
-        scopes=['https://www.googleapis.com/auth/drive.file'],
-        state=state,
-        redirect_uri=request.build_absolute_uri(reverse('gdrive_auth_callback'))
-    )
-    
-    flow.fetch_token(authorization_response=request.build_absolute_uri())
-    credentials = flow.credentials
-    
-    # Save credentials to file
-    credentials_path = os.path.join(settings.MEDIA_ROOT, 'gdrive_creds', f"user_{request.user.id}.json")
-    os.makedirs(os.path.dirname(credentials_path), exist_ok=True)
-    
-    with open(credentials_path, 'w') as f:
-        f.write(credentials.to_json())
-    
-    messages.success(request, "Google Drive authentication successful. You can now use Google Drive for backups.")
-    return redirect('storage_list')
+
+def handler404(request, exception=None):
+    context = {
+        'timestamp': timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    return render(request, '404.html', context, status=404)
+
+
+def handler500(request, exception=None):
+    context = {
+        'error_id': str(uuid.uuid4()),
+        'timestamp': timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+    return render(request, '500.html', context, status=500)
+
+
+def test_404_view(request):
+    raise Http404("This is a test 404 error")
+
+
+def test_500_view(request):
+    raise Exception("This is a test 500 error")

@@ -12,7 +12,7 @@ from backup_manager.views import (
     backup_history_view, export_history_csv_view,
     backup_files_view, download_backup_view, restore_backup_view,
     delete_backup_view, delete_history_view, add_storage_view, edit_storage_view,
-    delete_storage_view, storage_list_view
+    delete_storage_view, storage_list_view, handler404, handler500, test_404_view, test_500_view
 )
 
 urlpatterns = [
@@ -57,5 +57,10 @@ urlpatterns = [
     path('storage/edit/<int:storage_id>/', login_required(edit_storage_view), name='edit_storage'),
     path('api/storage/<int:storage_id>/', login_required(delete_storage_view), name='delete_storage'),
 
+    path('test-404/', test_404_view, name='test_404'),
+    path('test-500/', test_500_view, name='test_500'),
     
 ]
+
+handler404 = 'backup_manager.views.handler404'
+handler500 = 'backup_manager.views.handler500'
