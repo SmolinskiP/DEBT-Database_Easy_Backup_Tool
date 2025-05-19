@@ -69,17 +69,22 @@ If you prefer manual installation or are using a non-Debian system:
    python manage.py migrate
    ```
 
-5. Create an admin user:
+5. Collect static files:
+   ```bash
+   python manage.py collectstatic --noinput
+   ```
+
+6. Create an admin user:
    ```bash
    python manage.py create_user admin --email=your@email.com --admin
    ```
 
-6. Start the application:
+7. Start the application:
    ```bash
    python manage.py runserver 0.0.0.0:8000
    ```
 
-7. For production, configure Celery workers and a proper web server (Nginx/Apache)
+8. For production, configure Celery workers and a proper web server (Nginx/Apache)
 
 ## Configuration
 
